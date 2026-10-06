@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Vivodha Expo app (layer on top of expo/tsconfig.base)",
+  "extends": "./base.json"
+}
