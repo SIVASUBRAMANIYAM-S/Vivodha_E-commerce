@@ -1,0 +1,27 @@
+{
+  "name": "vivodha",
+  "private": true,
+  "description": "Vivodha: multi-category e-commerce for India (mobile app + admin panel)",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:admin": "pnpm --filter admin dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:types": "supabase gen types typescript --linked > packages/shared/src/types/database.ts"
+  },
+  "devDependencies": {
+    "@vivodha/config": "workspace:*",
+    "prettier": "^3.9.9",
+    "supabase": "^2.120.0",
+    "turbo": "^2.11.7",
+    "typescript": "~6.0.3"
+  }
+}
