@@ -7,21 +7,21 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 1. **Security: rotate the database password.** The DB password was pasted into the Phase 0 chat. Reset it in the Supabase Dashboard → Project Settings → Database, then run `supabase link` with the new one.
 2. ~~**Hosted Supabase auth settings**~~: done 2026-10-07 (owner enabled Anonymous sign-ins and Confirm email; ADR-121).
 3. **Node version:** stay on Node 22 LTS (maintenance) or move to Node 24 (active LTS)?
-4. **Final logo artwork** (SVG + app icon + splash). The current mark is a code-drawn placeholder.
+4. ~~**Final logo artwork**~~: done 2026-10-08, real SVG mark + app icons shipped in Phase 1 (ADR-123).
 
 ## Phase 1: schema
 
-5. **Order number format** (e.g. `VV2610-000123`) and **invoice number series** per financial year (e.g. `VV/26-27/000123`).
+5. ~~**Order number / invoice number format**~~: done 2026-10-08 (ADR-124, ADR-125).
 6. **Money in paise (integer)** is assumed (ADR-118). Confirm.
-7. **Admin roles:** are owner / admin / catalog_manager / order_manager / support enough? Do support users see full phone/email or masked?
-8. **Return window** per category (default days? perishables non-returnable?). This drives the points-credit timing.
-9. **Sample catalog for seed data:** will you provide real product data or images, or should placeholder data be used?
+7. ~~**Admin roles**~~: resolved 2026-10-08 as super_admin/manager/catalog/orders/support (ADR-128). Whether support sees full or masked phone/email is still open.
+8. ~~**Return window per category**~~: done 2026-10-08 (ADR-126, ADR-127).
+9. ~~**Sample catalog for seed data**~~: done 2026-10-08, 40 placeholder products seeded in Phase 1. Real product data/images remain open (see Q10, Q11).
 
 ## Phase 2: admin core
 
 10. Product data source: manual entry, CSV import, or a supplier feed?
 11. Image guidelines (size, background) and who supplies product photos. Competitor images must not be used.
-12. Who are the first admin users (emails, roles)?
+12. ~~**First admin user**~~: done 2026-10-08, `sivasaravanan492@gmail.com` seeded as super_admin (ADR-131). Further admin users remain open.
 
 ## Phase 4: auth, guest & onboarding
 
@@ -54,7 +54,7 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 
 ## Phase 8: admin orders & delivery
 
-30. Initial **serviceable pincodes**, the mode per pincode (own delivery / courier), and ETAs.
+30. ~~**Initial serviceable pincodes**~~: placeholder rows seeded 2026-10-08 (`is_placeholder = true`, ADR-130). The owner still needs to supply the real serviceable area and ETAs.
 31. Courier partner(s) for the manual AWB phase.
 
 ## Phase 9: Vivo Points
@@ -78,6 +78,6 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 ## Phase 12: release
 
 41. Google Play developer account (organisation account recommended), app name, package id (proposal: `in.vivodha.app`).
-42. Expo / EAS account owner and build profiles (dev/staging/prod Supabase projects: one project or three?).
+42. Expo / EAS account owner and build profiles. ~~DEV vs PROD Supabase projects~~ resolved 2026-10-08: current linked project is DEV, PROD created in Phase 12 (ADR-129).
 43. Support email/phone and the **grievance officer** details for the policy pages.
 44. Domain for the web policy pages and the account-deletion URL.
