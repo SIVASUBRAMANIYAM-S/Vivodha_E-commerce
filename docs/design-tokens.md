@@ -6,7 +6,7 @@ Source of truth: [`packages/shared/src/tokens/`](../packages/shared/src/tokens/)
 
 - **Logo:** rounded-square emerald mark, white "V" made of two leaves, saffron seed dot. Lowercase wordmark **vivodha**.
 - **Tagline:** "Fresh to your door".
-- The current mark in `apps/admin/src/components/brand/logo.tsx` and `app/icon.svg` is a **placeholder**. Final artwork is TBD - owner decision.
+- Single source of truth: [`packages/shared/src/brand/logo-mark.svg`](../packages/shared/src/brand/logo-mark.svg) (full mark), `logo-mark-foreground.svg` and `logo-mark-monochrome.svg` (Android adaptive-icon layers). `apps/admin/src/components/brand/logo.tsx` and `app/icon.svg` use the identical path data inline; `apps/mobile/assets/images/*.png` are rasterized from the same SVGs (ADR-123). Regenerate the PNGs with sharp if the master SVG changes.
 
 ## Colour
 

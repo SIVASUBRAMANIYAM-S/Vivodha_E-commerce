@@ -26,22 +26,26 @@ export const ORDER_STATUSES = [
 ] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-export const PAYMENT_METHODS = ['upi', 'card', 'wallet', 'cod'] as const;
+/** Mirrors the public.payment_method enum (supabase/migrations). */
+export const PAYMENT_METHODS = ['upi', 'card', 'wallet', 'netbanking', 'cod'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export const PAYMENT_STATUSES = ['created', 'pending', 'captured', 'failed', 'refunded'] as const;
+/** Mirrors the public.payment_status enum. */
+export const PAYMENT_STATUSES = [
+  'created',
+  'pending',
+  'captured',
+  'failed',
+  'refunded',
+  'partially_refunded',
+] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
 export const DELIVERY_MODES = ['own_delivery', 'courier'] as const;
 export type DeliveryMode = (typeof DELIVERY_MODES)[number];
 
-export const ADMIN_ROLES = [
-  'owner',
-  'admin',
-  'catalog_manager',
-  'order_manager',
-  'support',
-] as const;
+/** Mirrors the public.admin_role enum (ADR-128). super_admin passes every has_admin_role() check. */
+export const ADMIN_ROLES = ['super_admin', 'manager', 'catalog', 'orders', 'support'] as const;
 export type AdminRole = (typeof ADMIN_ROLES)[number];
 
 /** Vivo Points fallback defaults (runtime source of truth: store_config.points). */
