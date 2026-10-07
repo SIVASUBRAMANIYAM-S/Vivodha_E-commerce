@@ -56,7 +56,7 @@ Surfaces are separated by **1 px `border` + background tint, not shadows**. The 
 
 ## Icon rule
 
-- One open-source **line** icon set across both apps: **Lucide** (`lucide-react` in admin, already installed; `lucide-react-native` + `react-native-svg` in mobile, added in Phase 3).
+- One open-source **line** icon set across both apps: **Lucide** (`lucide-react` in admin, already installed; `lucide-react-native` + `react-native-svg` in mobile, added in Phase 2).
 - Stroke 1.75-2 px, sizes `sm 16 · md 20 · lg 24`, colour from text tokens.
 - **Never** use icons, illustrations, or artwork from competitor apps. Illustrations for empty states are original or properly licensed (TBD - owner decision on the source).
 

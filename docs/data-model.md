@@ -437,4 +437,4 @@ Implemented in migration 13. Policies mirror the equivalent table's RLS.
 | `banners`               | yes    | Banner artwork, read by anyone; write by catalog+ admins                        |
 | `shopping-list-uploads` | no     | User list photos, under `{user_id}/…`; owner + support/manager/super_admin only |
 
-Deferred to the phase that needs them: `returns` (Phase 7, return photos), `invoices` (Phase 7, GST invoice PDFs via signed URL), `branding` (Phase 2, store_config logo/theme assets — `store_config.logo_url` can point at any public URL in the meantime).
+Deferred to the phase that needs them: `returns` (Phase 7, return photos), `invoices` (Phase 7, GST invoice PDFs via signed URL), `branding` (Phase 3, store_config logo/theme assets — `store_config.logo_url` can point at any public URL in the meantime).
