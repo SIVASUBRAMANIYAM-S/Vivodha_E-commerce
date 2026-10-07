@@ -3,16 +3,21 @@ import { brand } from '@vivodha/shared/tokens';
 import { cn } from '@/lib/utils';
 
 /**
- * Placeholder Vivodha mark: rounded emerald square, white "V" from two leaves, saffron seed dot.
- * Replace with the final artwork once supplied (docs/open-questions.md).
+ * Vivodha mark: rounded emerald square, white "V" from two leaves, saffron seed
+ * dot (ADR-123). Path geometry mirrors packages/shared/src/brand/logo-mark.svg
+ * exactly (same 0-100 viewBox) — the single source of truth for the mark.
  */
 export function LogoMark({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 48 48" className={cn('size-8', className)} role="img" aria-label="vivodha">
-      <rect width="48" height="48" rx="12" fill={brand.primary} />
-      <path d="M24 37C14.5 31 9.5 21 12 11c8 3 13 13 12 26Z" fill="#FFFFFF" />
-      <path d="M24 37c9.5-6 14.5-16 12-26-8 3-13 13-12 26Z" fill="#FFFFFF" fillOpacity="0.85" />
-      <circle cx="24" cy="12.5" r="3.5" fill={brand.saffron} />
+    <svg viewBox="0 0 100 100" className={cn('size-8', className)} role="img" aria-label="vivodha">
+      <rect width="100" height="100" rx="24" fill={brand.primary} />
+      <path d="M50 78 C 20 65 15 35 28 15 C 34 34 38 56 50 78 Z" fill="#FFFFFF" />
+      <path
+        d="M50 78 C 80 65 85 35 72 15 C 66 34 62 56 50 78 Z"
+        fill="#FFFFFF"
+        fillOpacity="0.88"
+      />
+      <circle cx="50" cy="12" r="6.5" fill={brand.saffron} />
     </svg>
   );
 }
