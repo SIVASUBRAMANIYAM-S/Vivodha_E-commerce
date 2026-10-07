@@ -11,17 +11,15 @@ Fresh to your door. A multi-category online store for India: Expo React Native a
 
 ```bash
 pnpm install
-cp apps/mobile/.env.example apps/mobile/.env          # fill in Supabase URL + publishable key
-cp apps/admin/.env.example apps/admin/.env.local      # same values, NEXT_PUBLIC_ prefix
 ```
 
-Only the **publishable** key goes in these files. Secret/service-role keys are never used in the apps.
+The client env files (`apps/mobile/.env`, `apps/admin/.env.local`) are committed, so there is nothing to copy. They contain only the Supabase URL and the **publishable** key. Never add secret/service-role keys or the database password to them, because this repo is public.
 
-Link Supabase (owner only, run in your own terminal; the DB password is entered at the prompt and never stored):
+Supabase CLI access (each team member, with their own Supabase account after being invited to the organization; no database password needed):
 
 ```bash
 pnpm supabase login
-pnpm supabase link --project-ref <project-ref>
+pnpm supabase link --project-ref nzltgmfodazrhrxufpwe
 ```
 
 ## Commands
