@@ -1,0 +1,2 @@
+-- Seed data for local development (supabase db reset).
+-- Phase 0: intentionally empty. Phase 1 adds the default seller, store_config and sample catalog.
