@@ -5,7 +5,7 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 ## Phase 0 (now)
 
 1. **Security: rotate the database password.** The DB password was pasted into the Phase 0 chat. Reset it in the Supabase Dashboard → Project Settings → Database, then run `supabase link` with the new one.
-2. **Hosted Supabase auth settings:** enable **Anonymous sign-ins** and **Confirm email** in the dashboard (Authentication → Sign In / Providers), or approve a reviewed `supabase config push`.
+2. ~~**Hosted Supabase auth settings**~~: done 2026-10-07 (owner enabled Anonymous sign-ins and Confirm email; ADR-121).
 3. **Node version:** stay on Node 22 LTS (maintenance) or move to Node 24 (active LTS)?
 4. **Final logo artwork** (SVG + app icon + splash). The current mark is a code-drawn placeholder.
 

@@ -9,6 +9,10 @@ node_modules/
 .env.*
 !.env.example
 *.local
+# Client env files ARE committed so the team shares one config (ADR-122).
+# They hold only the project URL + publishable key. Never put secret keys or the DB password in them.
+!apps/mobile/.env
+!apps/admin/.env.local
 
 # ---- Build / tooling output ----
 dist/

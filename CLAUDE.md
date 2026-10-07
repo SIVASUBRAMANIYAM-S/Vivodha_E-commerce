@@ -74,13 +74,13 @@ docs/                     Product & engineering docs
 5. `git checkout <default>` && `git pull`
 6. Create `phase-<N>-<short-name>`.
 
-**During a phase:** small Conventional Commits. Never commit secrets or `.env` files. **Never push to or merge into `<default>`. Never force-push.**
+**During a phase:** small Conventional Commits. Never commit secrets (the committed client env files hold only the URL + publishable key; see Security rules). **Never push to or merge into `<default>`. Never force-push.**
 
 **End of phase:** push the branch and open a PR with `gh pr create` using [.github/pull_request_template.md](.github/pull_request_template.md). The owner reviews and merges. Then post a summary, verification steps, and open questions.
 
 ## Security rules
 
-- **No secrets in code or git.** Real values go only in gitignored env files: `apps/mobile/.env`, `apps/admin/.env.local`. Commit `.env.example` with variable names only.
+- **No secrets in code or git.** The client env files `apps/mobile/.env` and `apps/admin/.env.local` **are committed** (owner decision, ADR-122) so the whole team shares one config. They may contain **only** the Supabase URL and publishable key, never secret/service-role keys, Razorpay/AI secrets, or the DB password. The repo is public, so treat everything committed as public.
 - Clients use only the **publishable key** (`EXPO_PUBLIC_SUPABASE_*`, `NEXT_PUBLIC_SUPABASE_*`).
 - **Secret / service-role keys, Razorpay secrets, and AI model keys live only in Edge Function secrets** (`supabase secrets set`). Never in `apps/*`.
 - **The database password is never written anywhere**: not in files, scripts, docs, or chat. Commands that need it are run by the owner in their own terminal.
@@ -131,6 +131,6 @@ pnpm db:types         # regenerate packages/shared/src/types/database.ts (needs 
 - [ ] Both apps start (`pnpm dev:mobile`, `pnpm dev:admin`) without errors
 - [ ] New/changed tables have RLS policies + tests. Generated types are updated
 - [ ] Loading / empty / error / offline states are handled for new screens
-- [ ] No secrets in the diff. Env changes are reflected in `.env.example`
+- [ ] No secrets in the diff (committed env files contain only the URL + publishable key). Env changes are reflected in `.env.example`
 - [ ] Docs updated (PRD/screens/data-model/decisions/open-questions as relevant)
 - [ ] PR opened from the phase branch with the template filled in, including screenshots for UI
