@@ -16,6 +16,14 @@
 
 ## Conventions
 
+### Phase 3 additions (pending migration application)
+
+- `username_reservations(username, user_id, expires_at)` holds pending signup claims for 24 hours; it is backend-only. Confirmation publishes the username and profile fields atomically.
+- `request_rate_limits(scope, subject, window_start, attempts)` is backend-only; its atomic limiter is reusable by Edge Functions. No passwords, tokens, raw email addresses or Google keys belong in this table.
+- `serviceable_pincodes.min_order_paise` is a nonnegative integer, initially zero until business configuration is supplied. Customer/public access moves to the minimal `check_pincode` RPC.
+- `pincode_waitlist` stores pincode plus exactly one email/phone contact, optional server-assigned user ID, notification timestamp, and creation timestamp. Contact uniqueness is case-insensitive for email. Historical `serviceability_requests` remains intact.
+- `set_default_address` switches a caller's default address and profile pincode in one transaction.
+
 - Postgres 17 (Supabase). Tables are `snake_case` and plural. Primary keys are `uuid default gen_random_uuid()` unless noted.
 - Every table has `created_at timestamptz not null default now()`. Mutable tables also have `updated_at`, maintained by a trigger.
 - **Money is `bigint` in paise** (`*_paise`). Prices are GST-inclusive (MRP norm). Percentages are `numeric(5,2)`.
