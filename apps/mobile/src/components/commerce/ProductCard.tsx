@@ -61,42 +61,57 @@ export const ProductCard = memo(function ProductCard({ product, variant = 'grid'
   const multi = product.variants.length > 1;
   const itemLabel = `${product.name} ${selected.label}`;
 
+  const openProduct = () => router.push({ pathname: '/product/[id]', params: { id: product.id } });
+
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={product.name}
-      accessibilityHint="Opens product details"
-      onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}
-      pressedScale={0.98}
+    <View
       style={[
         styles.card,
         variant === 'rail' && { width: RAIL_CARD_WIDTH },
         { backgroundColor: colors.surfaceElevated, boxShadow: shadow.sm },
       ]}
     >
-      <View
-        ref={imageRef}
-        collapsable={false}
-        style={[styles.imageWrap, { backgroundColor: colors.surfaceTint }]}
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={product.name}
+        accessibilityHint="Opens product details"
+        onPress={openProduct}
+        pressedScale={0.98}
+        style={styles.imageTap}
       >
-        {imageUrl ? (
-          <Image
-            source={imageUrl}
-            recyclingKey={product.id}
-            cachePolicy="memory-disk"
-            transition={160}
-            contentFit="cover"
-            style={StyleSheet.absoluteFill}
-            accessibilityIgnoresInvertColors
-          />
-        ) : null}
-        {off > 0 ? <Badge tone="discount" label={`${off}% OFF`} style={styles.badge} /> : null}
-      </View>
+        <View
+          ref={imageRef}
+          collapsable={false}
+          style={[styles.imageWrap, { backgroundColor: colors.surfaceTint }]}
+        >
+          {imageUrl ? (
+            <Image
+              source={imageUrl}
+              recyclingKey={product.id}
+              cachePolicy="memory-disk"
+              transition={160}
+              contentFit="cover"
+              style={StyleSheet.absoluteFill}
+              accessibilityIgnoresInvertColors
+            />
+          ) : null}
+          {off > 0 ? <Badge tone="discount" label={`${off}% OFF`} style={styles.badge} /> : null}
+        </View>
+      </PressableScale>
 
       <View style={styles.body}>
-        <Text variant="body" numberOfLines={2} style={styles.name}>
-          {product.name}
-        </Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={product.name}
+          accessibilityHint="Opens product details"
+          onPress={openProduct}
+          pressedScale={0.98}
+          style={styles.nameTap}
+        >
+          <Text variant="body" numberOfLines={2} style={styles.name}>
+            {product.name}
+          </Text>
+        </PressableScale>
 
         <Pressable
           accessibilityRole="button"
@@ -128,15 +143,17 @@ export const ProductCard = memo(function ProductCard({ product, variant = 'grid'
           />
         </View>
       </View>
-    </PressableScale>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
   card: { flex: 1, borderRadius: radius.card, padding: spacing.sm, gap: spacing.sm },
+  imageTap: { width: '100%' },
   imageWrap: { aspectRatio: 1, borderRadius: radius.image, overflow: 'hidden' },
   badge: { position: 'absolute', top: spacing.sm, left: spacing.sm },
   body: { gap: spacing.xs, flex: 1 },
+  nameTap: { alignSelf: 'stretch' },
   name: { minHeight: 40 },
   variant: {
     flexDirection: 'row',
