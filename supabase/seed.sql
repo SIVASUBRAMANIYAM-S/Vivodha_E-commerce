@@ -1218,16 +1218,16 @@ insert into public.feature_flags (key, enabled, description) values
 on conflict (key) do nothing;
 
 -- ---------------------------------------------------------------------------
--- Banners (placeholder artwork paths — replace with real assets).
+-- Banners. Artwork: generated original placeholders in the `banners` storage bucket (ADR-140).
 -- No natural-key unique constraint on this table, so idempotency is via
 -- WHERE NOT EXISTS (title) rather than ON CONFLICT.
 -- ---------------------------------------------------------------------------
 insert into public.banners (title, image_path, placement, sort_order, is_active)
 select v.title, v.image_path, v.placement, v.sort_order, v.is_active
 from (values
-  ('Fresh fruits & vegetables', 'banners/placeholder-fruits-veg.png', 'home_carousel', 0, true),
-  ('Everyday grocery essentials', 'banners/placeholder-grocery.png', 'home_carousel', 1, true),
-  ('Welcome offer', 'banners/placeholder-welcome.png', 'home_carousel', 2, true)
+  ('Fresh fruits & vegetables', 'seed/fruits-veg.webp', 'home_carousel', 0, true),
+  ('Everyday grocery essentials', 'seed/grocery.webp', 'home_carousel', 1, true),
+  ('Welcome offer', 'seed/welcome.webp', 'home_carousel', 2, true)
 ) as v(title, image_path, placement, sort_order, is_active)
 where not exists (select 1 from public.banners b where b.title = v.title);
 
@@ -1267,6 +1267,67 @@ values
   ('560001', 'Bengaluru', 'Karnataka', 'courier', 4000, 59900, '2-3 days', true, true),
   ('400001', 'Mumbai', 'Maharashtra', 'courier', 4000, 59900, '2-3 days', false, true)
 on conflict (pincode) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Product images (ADR-140): generated original placeholders uploaded to the
+-- `product-images` bucket at seed/<product slug>.webp. Idempotent: only adds
+-- an image to a seeded product that has none yet.
+-- ---------------------------------------------------------------------------
+insert into public.product_images (product_id, storage_path, alt, position)
+select p.id, 'seed/' || p.slug || '.webp', p.name, 0
+from public.products p
+where p.slug in (
+  'daily-basmati-rice-harvestoria',
+  'stoneground-whole-wheat-atta-harvestoria',
+  'toor-dal-harvestoria',
+  'cold-pressed-groundnut-oil-puredrop',
+  'pure-cow-ghee-puredrop',
+  'garam-masala-powder-spiceroute',
+  'turmeric-powder-spiceroute',
+  'roasted-almonds-nutgrove',
+  'fresh-royal-gala-apples-farmfresh',
+  'ripe-robusta-bananas-farmfresh',
+  'farm-tomatoes-farmfresh',
+  'baby-potatoes-farmfresh',
+  'broccoli-farmfresh',
+  'fresh-coriander-leaves-farmfresh',
+  'toned-milk-meadowgold',
+  'fresh-curd-meadowgold',
+  'malai-paneer-meadowgold',
+  'multigrain-bread-bakehouse',
+  'farm-eggs-meadowgold',
+  'lemon-fizz-soft-drink-bubblify',
+  'assam-black-tea-leafbrew',
+  'instant-coffee-granules-leafbrew',
+  'packaged-drinking-water-clearspring',
+  'classic-salted-potato-chips-crispee',
+  'glucose-biscuits-bakehouse',
+  'instant-veg-noodles-quickbite',
+  'dark-chocolate-bar-cocoabliss',
+  'fresh-chicken-curry-cut-coastalcatch',
+  'rohu-fish-cleaned-coastalcatch',
+  'frozen-mixed-vegetables-coldcrate',
+  'vanilla-ice-cream-tub-creamloop',
+  'concentrated-liquid-detergent-cleanova',
+  'lavender-air-freshener-freshaire',
+  'gentle-moisturising-body-wash-purebloom',
+  'nourishing-shampoo-purebloom',
+  'herbal-toothpaste-smilewell',
+  'non-stick-frying-pan-kitchloom',
+  'airtight-storage-container-set-kitchloom',
+  'everyday-tote-bag-carryall',
+  'ruled-notebook-penmark'
+)
+  and not exists (select 1 from public.product_images pi where pi.product_id = p.id);
+
+-- Banners seeded in Phase 1 pointed at files that never existed; repoint them
+-- at the uploaded artwork. No-op once applied.
+update public.banners set image_path = 'seed/fruits-veg.webp'
+where title = 'Fresh fruits & vegetables' and image_path = 'banners/placeholder-fruits-veg.png';
+update public.banners set image_path = 'seed/grocery.webp'
+where title = 'Everyday grocery essentials' and image_path = 'banners/placeholder-grocery.png';
+update public.banners set image_path = 'seed/welcome.webp'
+where title = 'Welcome offer' and image_path = 'banners/placeholder-welcome.png';
 
 -- ---------------------------------------------------------------------------
 -- First super_admin (ADR-131) — resolved to admin_users on first signup with

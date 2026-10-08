@@ -1,4 +1,4 @@
-/** 4-point spacing scale. */
+/** 4-point spacing scale. Screen gutter = lg (16). */
 export const spacing = {
   none: 0,
   xxs: 2,
@@ -11,34 +11,43 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
-export const radii = {
+/** Corner radii by role (ADR-133): cards 20, buttons/chips/inputs 14, sheets 28. */
+export const radius = {
   none: 0,
-  sm: 6,
-  md: 10,
-  lg: 14,
-  xl: 20,
+  badge: 8,
+  button: 14,
+  chip: 14,
+  input: 14,
+  image: 14,
+  card: 20,
+  sheet: 28,
   pill: 999,
 } as const;
 
 /**
- * Flat elevation: separate surfaces with borders and tint, not shadows.
- * Only `overlay` (sheets, sticky cart bar) may use a soft shadow.
+ * Soft layered depth: two stacked, low-opacity, ink-tinted shadows, as CSS
+ * box-shadow strings (React Native `boxShadow`, consistent on Android and iOS
+ * under the new architecture). Supersedes Phase 0's flat elevation (ADR-133).
  */
-export const elevation = {
-  flat: { borderWidth: 1, borderColor: 'border', shadow: null },
-  raised: { borderWidth: 1, borderColor: 'border', shadow: null },
-  overlay: {
-    borderWidth: 0,
-    borderColor: null,
-    shadow: { color: '#13261F', opacity: 0.08, radius: 12, offsetY: -2 },
-  },
+export const shadow = {
+  none: 'none',
+  sm: '0px 1px 2px rgba(19, 38, 31, 0.06), 0px 2px 6px rgba(19, 38, 31, 0.05)',
+  md: '0px 2px 4px rgba(19, 38, 31, 0.06), 0px 6px 16px rgba(19, 38, 31, 0.08)',
+  lg: '0px 4px 8px rgba(19, 38, 31, 0.06), 0px 12px 32px rgba(19, 38, 31, 0.14)',
 } as const;
 
 export const iconSize = {
   sm: 16,
   md: 20,
   lg: 24,
+  xl: 32,
+} as const;
+
+/** Minimum touch target (dp). */
+export const touch = {
+  min: 48,
 } as const;
 
 export type SpacingToken = keyof typeof spacing;
-export type RadiusToken = keyof typeof radii;
+export type RadiusToken = keyof typeof radius;
+export type ShadowToken = keyof typeof shadow;

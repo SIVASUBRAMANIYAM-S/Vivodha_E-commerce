@@ -30,7 +30,7 @@ Data needed: `products.hsn_code`, `products.gst_rate`, seller GSTIN and state, a
 
 ## 3. Legal Metrology (Packaged Commodities) Rules
 
-For pre-packed goods, show: manufacturer/packer/importer name and address, **country of origin**, generic name, net quantity, **MRP (inclusive of all taxes)**, unit sale price (per kg/litre), best before/expiry date, and the consumer care contact. Product forms in Phase 2 must capture these fields (in `specs` via the attribute set).
+For pre-packed goods, show: manufacturer/packer/importer name and address, **country of origin**, generic name, net quantity, **MRP (inclusive of all taxes)**, unit sale price (per kg/litre), best before/expiry date, and the consumer care contact. Product forms in Phase 3 (admin core) must capture these fields (in `specs` via the attribute set).
 
 ## 4. Consumer Protection (E-Commerce) Rules, 2020
 

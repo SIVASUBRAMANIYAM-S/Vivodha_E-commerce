@@ -17,7 +17,7 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 8. ~~**Return window per category**~~: done 2026-10-08 (ADR-126, ADR-127).
 9. ~~**Sample catalog for seed data**~~: done 2026-10-08, 40 placeholder products seeded in Phase 1. Real product data/images remain open (see Q10, Q11).
 
-## Phase 2: admin core
+## Phase 3: admin core
 
 10. Product data source: manual entry, CSV import, or a supplier feed?
 11. Image guidelines (size, background) and who supplies product photos. Competitor images must not be used.

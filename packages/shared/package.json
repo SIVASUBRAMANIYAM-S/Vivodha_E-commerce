@@ -15,7 +15,8 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "contrast": "node scripts/contrast.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

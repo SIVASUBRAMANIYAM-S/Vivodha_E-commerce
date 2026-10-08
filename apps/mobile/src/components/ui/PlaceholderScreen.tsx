@@ -1,36 +1,20 @@
-import { StyleSheet, View } from 'react-native';
-
-import { colors, radii, spacing } from '@/theme';
+import type { LucideIcon } from 'lucide-react-native';
+import { Hammer } from '@/components/icons';
 
 import { Screen } from './Screen';
+import { EmptyState } from './States';
 import { Text } from './Text';
 
-type Props = {
-  title: string;
-  phase: string;
-  description?: string;
-};
+type Props = { title: string; phase: string; description?: string; icon?: LucideIcon };
 
-/** Phase 0 placeholder used by every route until its feature phase ships. */
-export function PlaceholderScreen({ title, phase, description }: Props) {
+/** Placeholder for routes whose feature phase hasn't shipped yet. */
+export function PlaceholderScreen({ title, phase, description, icon = Hammer }: Props) {
   return (
     <Screen>
-      <Text variant="h1">{title}</Text>
-      <View style={styles.card}>
-        <Text variant="bodyStrong" color="primary">
-          Coming in {phase}
-        </Text>
-        {description ? <Text color="textSecondary">{description}</Text> : null}
-      </View>
+      <Text variant="h1" accessibilityRole="header">
+        {title}
+      </Text>
+      <EmptyState icon={icon} title={`Coming in ${phase}`} message={description} />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    padding: spacing.lg,
-    gap: spacing.xs,
-    borderRadius: radii.lg,
-    backgroundColor: colors.tint,
-  },
-});

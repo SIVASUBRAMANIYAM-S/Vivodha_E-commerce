@@ -1,62 +1,92 @@
-import { ActivityIndicator, Pressable, StyleSheet, type PressableProps } from 'react-native';
+import type { LucideIcon } from 'lucide-react-native';
+import { ActivityIndicator, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radii, spacing } from '@/theme';
+import { iconSize, radius, spacing, touch, useTheme } from '@/theme';
 
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'destructive';
+type Size = 'md' | 'lg';
 
-export type ButtonProps = Omit<PressableProps, 'children'> & {
+export type ButtonProps = {
   title: string;
+  onPress?: () => void;
   variant?: Variant;
+  size?: Size;
   loading?: boolean;
+  disabled?: boolean;
+  icon?: LucideIcon;
+  fullWidth?: boolean;
+  accessibilityHint?: string;
+  style?: StyleProp<ViewStyle>;
 };
 
-/** Stub: final states (pressed, disabled, sizes, icons) land in Phase 3 (mobile UI kit). */
 export function Button({
   title,
+  onPress,
   variant = 'primary',
-  loading,
-  disabled,
+  size = 'md',
+  loading = false,
+  disabled = false,
+  icon: Icon,
+  fullWidth,
+  accessibilityHint,
   style,
-  ...rest
 }: ButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
+
+  const palette = {
+    primary: { bg: colors.primary, fg: colors.textOnPrimary, border: 'transparent' },
+    secondary: { bg: colors.surfaceTint, fg: colors.primary, border: 'transparent' },
+    ghost: { bg: 'transparent', fg: colors.primary, border: 'transparent' },
+    destructive: { bg: colors.surface, fg: colors.danger, border: colors.danger },
+  }[variant];
+
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!isDisabled, busy: !!loading }}
+      accessibilityLabel={title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
-      style={(state) => [
+      onPress={onPress}
+      hapticEvent={isDisabled ? false : 'select'}
+      style={[
         styles.base,
-        styles[variant],
-        state.pressed && variant === 'primary' && { backgroundColor: colors.primaryPressed },
-        isDisabled && styles.disabled,
-        typeof style === 'function' ? style(state) : style,
+        {
+          minHeight: size === 'lg' ? 56 : touch.min,
+          backgroundColor: palette.bg,
+          borderColor: palette.border,
+          opacity: isDisabled && !loading ? 0.45 : 1,
+        },
+        fullWidth && styles.fullWidth,
+        style,
       ]}
-      {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? colors.textOnPrimary : colors.primary} />
+        <ActivityIndicator color={palette.fg} accessibilityLabel="Loading" />
       ) : (
-        <Text variant="bodyStrong" color={variant === 'primary' ? 'textOnPrimary' : 'primary'}>
-          {title}
-        </Text>
+        <View style={styles.content}>
+          {Icon ? <Icon size={iconSize.md} color={palette.fg} strokeWidth={2} /> : null}
+          <Text variant="label" style={{ color: palette.fg }}>
+            {title}
+          </Text>
+        </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 48,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primary: { backgroundColor: colors.primary },
-  secondary: { backgroundColor: colors.tint },
-  ghost: { backgroundColor: 'transparent' },
-  disabled: { opacity: 0.5 },
+  fullWidth: { alignSelf: 'stretch' },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });
