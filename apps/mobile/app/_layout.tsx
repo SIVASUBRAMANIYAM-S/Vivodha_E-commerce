@@ -14,7 +14,7 @@ import { FlyToCartProvider } from '@/components/motion/FlyToCart';
 import { ScrollChromeProvider } from '@/components/motion/ScrollChrome';
 import { ToastProvider } from '@/components/ui/Toast';
 import { queryClient } from '@/lib/query-client';
-import { fontAssets, fontFor, lightTheme, ThemeProvider } from '@/theme';
+import { duration, fontAssets, fontFor, lightTheme, ThemeProvider } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -54,14 +54,13 @@ export default function RootLayout() {
                         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                         <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
                         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                        {/* Card -> detail: fast scale+fade (ADR-138); fade here, scale on the hero image. */}
+                        {/* Card -> detail: fast route fade plus a scale+fade on the hero image (ADR-138). */}
                         <Stack.Screen
                           name="product/[id]"
                           options={{
-                            // Header shown until the real detail screen (with its own top bar) lands.
                             title: '',
                             animation: 'fade',
-                            animationDuration: 200,
+                            animationDuration: duration.fast,
                           }}
                         />
                         <Stack.Screen name="category/[slug]" options={{ title: '' }} />

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -15,7 +15,7 @@ import Animated, {
 import Svg, { Circle, G, Path } from 'react-native-svg';
 
 import { LEAF_LEFT, LEAF_RIGHT } from '@/components/brand/LogoMark';
-import { brand, timeTo, useMotionPreference } from '@/theme';
+import { timeTo, useMotionPreference, useTheme } from '@/theme';
 
 const AnimatedG = Animated.createAnimatedComponent(G);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -34,6 +34,7 @@ type Props = {
  * Reduced motion: a static mark that fades in/out.
  */
 export function LeafRefresh({ refreshing, pull, size = 36 }: Props) {
+  const { colors } = useTheme();
   const { reduceMotion } = useMotionPreference();
   const sway = useSharedValue(0);
   const shown = useSharedValue(refreshing ? 1 : 0);
@@ -78,20 +79,38 @@ export function LeafRefresh({ refreshing, pull, size = 36 }: Props) {
 
   return (
     <Animated.View
-      pointerEvents="none"
       accessibilityElementsHidden={!refreshing}
       accessibilityLabel={refreshing ? 'Refreshing' : undefined}
-      style={[styles.wrap, wrapStyle]}
+      style={[styles.wrap, { pointerEvents: 'none' }, wrapStyle]}
     >
-      <View style={[styles.disc, { width: size + 12, height: size + 12 }]}>
+      <View
+        style={[
+          styles.disc,
+          { width: size + 12, height: size + 12, backgroundColor: colors.surfaceTint },
+        ]}
+      >
         <Svg width={size} height={size} viewBox="0 0 100 100">
-          <AnimatedG animatedProps={leftProps}>
-            <Path d={LEAF_LEFT} fill={brand.primary} />
-          </AnimatedG>
-          <AnimatedG animatedProps={rightProps}>
-            <Path d={LEAF_RIGHT} fill={brand.primary} fillOpacity={0.75} />
-          </AnimatedG>
-          <AnimatedCircle cx={50} r={7} fill={brand.saffron} animatedProps={seedProps} />
+          {Platform.OS === 'web' ? (
+            <>
+              <G>
+                <Path d={LEAF_LEFT} fill={colors.primary} />
+              </G>
+              <G>
+                <Path d={LEAF_RIGHT} fill={colors.primary} fillOpacity={0.75} />
+              </G>
+              <Circle cx={50} cy={12} r={7} fill={colors.warning} />
+            </>
+          ) : (
+            <>
+              <AnimatedG animatedProps={leftProps}>
+                <Path d={LEAF_LEFT} fill={colors.primary} />
+              </AnimatedG>
+              <AnimatedG animatedProps={rightProps}>
+                <Path d={LEAF_RIGHT} fill={colors.primary} fillOpacity={0.75} />
+              </AnimatedG>
+              <AnimatedCircle cx={50} r={7} fill={colors.warning} animatedProps={seedProps} />
+            </>
+          )}
         </Svg>
       </View>
     </Animated.View>
@@ -102,7 +121,6 @@ const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
   disc: {
     borderRadius: 999,
-    backgroundColor: brand.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
