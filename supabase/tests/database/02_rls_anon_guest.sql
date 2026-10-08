@@ -5,19 +5,19 @@ select plan(9);
 
 set local role anon;
 
-select is((select count(*) from public.carts)::int, 0, 'anon reads 0 rows from carts');
-select is((select count(*) from public.orders)::int, 0, 'anon reads 0 rows from orders');
-select is((select count(*) from public.variants)::int, 0, 'anon reads 0 rows from the variants base table');
-select ok((select count(*) from public.products) > 0, 'anon reads active products');
-select ok((select count(*) from public.variants_public) > 0, 'anon reads variants_public');
+select is((select count(*) from erp.carts)::int, 0, 'anon reads 0 rows from carts');
+select is((select count(*) from erp.orders)::int, 0, 'anon reads 0 rows from orders');
+select is((select count(*) from erp.variants)::int, 0, 'anon reads 0 rows from the variants base table');
+select ok((select count(*) from erp.products) > 0, 'anon reads active products');
+select ok((select count(*) from erp.variants_public) > 0, 'anon reads variants_public');
 select is(
-  (select count(*) from public.variants_public where member_price_paise is not null)::int,
+  (select count(*) from erp.variants_public where member_price_paise is not null)::int,
   0,
   'anon never sees member_price_paise'
 );
-select is((select count(*) from public.coupons)::int, 0, 'anon cannot browse the coupons table');
+select is((select count(*) from erp.coupons)::int, 0, 'anon cannot browse the coupons table');
 select is(
-  (select code::text from public.lookup_coupon('WELCOME10')),
+  (select code::text from erp.lookup_coupon('WELCOME10')),
   'WELCOME10',
   'anon can look up a coupon by its exact code'
 );
@@ -36,8 +36,8 @@ select set_config(
 );
 
 select throws_ok(
-  $$ insert into public.wishlists (user_id, product_id)
-     values ('33333333-3333-3333-3333-333333333333', (select id from public.products limit 1)) $$,
+  $$ insert into erp.wishlists (user_id, product_id)
+     values ('33333333-3333-3333-3333-333333333333', (select id from erp.products limit 1)) $$,
   null, null,
   'a guest (anonymous) session cannot insert into wishlists (registered only)'
 );

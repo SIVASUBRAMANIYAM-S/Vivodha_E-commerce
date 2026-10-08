@@ -19,9 +19,9 @@ Admin roles (ADR-128): **super_admin, manager, catalog, orders, support**. `supe
 Helper functions, all `set search_path = ''`:
 
 - `auth.uid()` — the current user (null for anon or when no JWT is set).
-- `public.is_anonymous()` — `coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)`. `stable`, no `security definer` needed (`auth.jwt()` is already readable by the caller).
-- `public.is_admin()` — an active row exists in `admin_users` for `auth.uid()`. `security definer`, so it can check `admin_users` (no public SELECT policy) without granting anon/authenticated direct access to that table. Defined in migration 02 (not 01), because a `LANGUAGE SQL` function's body is parsed and bound to the catalog at `CREATE FUNCTION` time — unlike `plpgsql`, it can't reference a table that doesn't exist yet.
-- `public.has_admin_role(roles admin_role[])` — the caller's role is in the given list, or is `super_admin`. Same `security definer` reasoning.
+- `erp.is_anonymous()` — `coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false)`. `stable`, no `security definer` needed (`auth.jwt()` is already readable by the caller).
+- `erp.is_admin()` — an active row exists in `admin_users` for `auth.uid()`. `security definer`, so it can check `admin_users` (no public SELECT policy) without granting anon/authenticated direct access to that table. Defined in migration 02 (not 01), because a `LANGUAGE SQL` function's body is parsed and bound to the catalog at `CREATE FUNCTION` time — unlike `plpgsql`, it can't reference a table that doesn't exist yet.
+- `erp.has_admin_role(roles admin_role[])` — the caller's role is in the given list, or is `super_admin`. Same `security definer` reasoning.
 
 **A real gotcha worth flagging:** Supabase grants `EXECUTE` on every newly created function directly to `anon`/`authenticated` (project-level `ALTER DEFAULT PRIVILEGES`). A plain `revoke all on function ... from public` does **not** undo that — those are separate grants to those roles, not to the `PUBLIC` pseudo-role. Every `security definer` function meant to be restricted (the inventory reserve/release/commit functions, `next_invoice_number()`) explicitly revokes from `anon, authenticated` too.
 
@@ -74,7 +74,7 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 | notifications           | ✗                              | R/U own                                  | R/U own                             | ✗                                                   | all                                         |
 | device_tokens           | ✗                              | all own                                  | all own                             | ✗                                                   | all                                         |
 
-¹ A customer's own `UPDATE` can never set `deleted_at` directly — `REVOKE UPDATE (deleted_at) ON public.profiles FROM authenticated` locks it at the column-privilege level, below RLS. Account deletion is a dedicated flow (later phase).
+¹ A customer's own `UPDATE` can never set `deleted_at` directly — `REVOKE UPDATE (deleted_at) ON erp.profiles FROM authenticated` locks it at the column-privilege level, below RLS. Account deletion is a dedicated flow (later phase).
 
 ² **Column-hiding is done with views, because RLS filters rows, not columns.** The base table has no SELECT policy at all for anon/authenticated (admins only); the view is a plain (non-`security_invoker`) view, so it runs as its owner — which, since that owner also owns the underlying table and `FORCE ROW LEVEL SECURITY` is never set, bypasses the restrictive base-table policy by design — and then re-applies its own filtering/projection explicitly in the view body:
 
@@ -84,7 +84,7 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 
 ³ No `UPDATE` policy exists for a plain customer at all, so an attempted status change from the client simply updates 0 rows (no error) — this is RLS behaviour, not something to catch via try/catch. All real status changes go through `orders_validate_status_transition()` (migration 07) plus either the admin policy or a `service_role` Edge Function.
 
-⁴ `public.lookup_coupon(code)` (`security definer`, migration 08) is the only read path for anon/guest/customer — there is no SELECT policy on the `coupons` table for them at all, so no one can enumerate every currently-valid code by scanning the table.
+⁴ `erp.lookup_coupon(code)` (`security definer`, migration 08) is the only read path for anon/guest/customer — there is no SELECT policy on the `coupons` table for them at all, so no one can enumerate every currently-valid code by scanning the table.
 
 ⁵ `points_ledger` has no `UPDATE`/`DELETE` policy for any role, and on top of that, triggers (`points_ledger_no_update`/`points_ledger_no_delete`, migration 09) unconditionally reject `UPDATE`/`DELETE` — this also blocks `service_role` and the table owner, which plain RLS alone cannot do (`service_role` bypasses RLS entirely).
 

@@ -12,7 +12,8 @@ export async function updateSession(request: NextRequest) {
   const { url, publishableKey } = getSupabaseEnv();
   let response = NextResponse.next({ request });
 
-  const supabase = createServerClient<Database>(url, publishableKey, {
+  const supabase = createServerClient<Database, 'erp'>(url, publishableKey, {
+    db: { schema: 'erp' },
     cookies: {
       getAll() {
         return request.cookies.getAll();

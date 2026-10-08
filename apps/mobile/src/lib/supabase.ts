@@ -13,8 +13,13 @@ if (!supabaseUrl || !supabasePublishableKey) {
   );
 }
 
-/** Client-safe Supabase client. Only the publishable key ever ships in the app. */
-export const supabase = createClient<Database>(supabaseUrl, supabasePublishableKey, {
+/**
+ * Client-safe Supabase client. Only the publishable key ever ships in the app.
+ * ADR-142: Vivodha's tables live in the `erp` schema, not `public` (this
+ * project's database is shared with another app that owns `public`).
+ */
+export const supabase = createClient<Database, 'erp'>(supabaseUrl, supabasePublishableKey, {
+  db: { schema: 'erp' },
   auth: {
     storage: secureStorage,
     autoRefreshToken: true,

@@ -19,25 +19,25 @@ create policy product_images_bucket_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'product-images'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 create policy product_images_bucket_update on storage.objects
   for update to authenticated
   using (
     bucket_id = 'product-images'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   )
   with check (
     bucket_id = 'product-images'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 create policy product_images_bucket_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'product-images'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 -- ---------------------------------------------------------------------------
@@ -51,25 +51,25 @@ create policy banners_bucket_insert on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'banners'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 create policy banners_bucket_update on storage.objects
   for update to authenticated
   using (
     bucket_id = 'banners'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   )
   with check (
     bucket_id = 'banners'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 create policy banners_bucket_delete on storage.objects
   for delete to authenticated
   using (
     bucket_id = 'banners'
-    and has_admin_role(array['catalog', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['catalog', 'manager', 'super_admin']::erp.admin_role[])
   );
 
 -- ---------------------------------------------------------------------------
@@ -92,5 +92,5 @@ create policy shopping_list_uploads_admin_read on storage.objects
   for select to authenticated
   using (
     bucket_id = 'shopping-list-uploads'
-    and has_admin_role(array['support', 'manager', 'super_admin']::public.admin_role[])
+    and has_admin_role(array['support', 'manager', 'super_admin']::erp.admin_role[])
   );

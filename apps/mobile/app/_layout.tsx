@@ -16,8 +16,8 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { queryClient } from '@/lib/query-client';
 import { fontAssets, fontFor, lightTheme, ThemeProvider } from '@/theme';
 
-void SplashScreen.preventAutoHideAsync();
-
+void SplashScreen.preventAutoHideAsync(); 
+// Prevent the splash screen from auto-hiding until fonts are loaded.
 export default function RootLayout() {
   // Fonts load while the splash screen is up, so no text ever flashes unstyled.
   const [fontsLoaded, fontError] = useFonts(fontAssets);

@@ -24,7 +24,7 @@
 - Snapshots: an order copies names, prices, and the address at purchase time. It never joins live catalog data for history.
 - Soft delete (`deleted_at`) only where history matters (profiles, products). Everything else is hard delete or `is_active`.
 - Text search: `products.search tsvector` (generated) + a `pg_trgm` index on `name`.
-- Auth users live in `auth.users`. `public.profiles.id` = `auth.users.id`.
+- Auth users live in `auth.users`. `erp.profiles.id` = `auth.users.id`. (ADR-142: all Vivodha tables live in the `erp` schema, not `public`.)
 
 ## Enums
 

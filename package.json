@@ -15,7 +15,7 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:types": "supabase gen types typescript --linked > packages/shared/src/types/database.ts"
+    "db:types": "supabase gen types typescript --linked --schema erp > packages/shared/src/types/database.ts"
   },
   "devDependencies": {
     "@vivodha/config": "workspace:*",

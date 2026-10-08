@@ -7,12 +7,14 @@ import { getSupabaseEnv } from './env';
 /**
  * Supabase client for Server Components, Server Actions and Route Handlers.
  * Create a new client per request; never share one across requests.
+ * ADR-142: Vivodha's tables live in the `erp` schema, not `public`.
  */
 export async function createClient() {
   const { url, publishableKey } = getSupabaseEnv();
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(url, publishableKey, {
+  return createServerClient<Database, 'erp'>(url, publishableKey, {
+    db: { schema: 'erp' },
     cookies: {
       getAll() {
         return cookieStore.getAll();
