@@ -1143,6 +1143,44 @@ export type Database = {
           },
         ]
       }
+      pincode_waitlist: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          notified_at: string | null
+          phone: string | null
+          pincode: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          notified_at?: string | null
+          phone?: string | null
+          pincode: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          notified_at?: string | null
+          phone?: string | null
+          pincode?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pincode_waitlist_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_boosters: {
         Row: {
           category_id: string
@@ -1577,6 +1615,27 @@ export type Database = {
           },
         ]
       }
+      request_rate_limits: {
+        Row: {
+          attempts: number
+          scope: string
+          subject: string
+          window_start: string
+        }
+        Insert: {
+          attempts: number
+          scope: string
+          subject: string
+          window_start: string
+        }
+        Update: {
+          attempts?: number
+          scope?: string
+          subject?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       returns: {
         Row: {
           admin_note: string | null
@@ -1787,6 +1846,7 @@ export type Database = {
           free_delivery_threshold_paise: number | null
           is_active: boolean
           is_placeholder: boolean
+          min_order_paise: number
           pincode: string
           state: string | null
           updated_at: string
@@ -1802,6 +1862,7 @@ export type Database = {
           free_delivery_threshold_paise?: number | null
           is_active?: boolean
           is_placeholder?: boolean
+          min_order_paise?: number
           pincode: string
           state?: string | null
           updated_at?: string
@@ -1817,6 +1878,7 @@ export type Database = {
           free_delivery_threshold_paise?: number | null
           is_active?: boolean
           is_placeholder?: boolean
+          min_order_paise?: number
           pincode?: string
           state?: string | null
           updated_at?: string
@@ -2043,6 +2105,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      username_reservations: {
+        Row: {
+          expires_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          expires_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          expires_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
       }
       usernames: {
         Row: {
@@ -2304,9 +2384,28 @@ export type Database = {
         Args: { p_category_id: string }
         Returns: string
       }
+      check_pincode: {
+        Args: { p_pincode: string }
+        Returns: {
+          cod_available: boolean
+          eta_text: string
+          min_order_paise: number
+          mode: Database["public"]["Enums"]["delivery_mode"]
+          serviceable: boolean
+        }[]
+      }
       commit_inventory: {
         Args: { p_quantity: number; p_seller_id: string; p_variant_id: string }
         Returns: undefined
+      }
+      consume_request_limit: {
+        Args: {
+          p_limit: number
+          p_scope: string
+          p_subject: string
+          p_window_seconds: number
+        }
+        Returns: boolean
       }
       financial_year_label: { Args: { p_date?: string }; Returns: string }
       has_admin_role: {
@@ -2361,6 +2460,11 @@ export type Database = {
         Args: { p_quantity: number; p_seller_id: string; p_variant_id: string }
         Returns: boolean
       }
+      set_default_address: {
+        Args: { p_address_id: string }
+        Returns: undefined
+      }
+      username_available: { Args: { p_username: string }; Returns: boolean }
     }
     Enums: {
       admin_role: "super_admin" | "manager" | "catalog" | "orders" | "support"
