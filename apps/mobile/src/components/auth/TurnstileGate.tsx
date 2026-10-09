@@ -108,7 +108,12 @@ export function TurnstileProvider({ children }: { children: ReactNode }) {
               />
               {action ? (
                 <WebView
-                  source={{ html: buildTurnstileHtml(action) }}
+                  // baseUrl gives the WebView a real origin (matching the
+                  // "localhost" hostname registered on the Turnstile
+                  // widget) instead of the opaque/null origin WKWebView
+                  // otherwise uses for an inline HTML string, which
+                  // Cloudflare was rejecting as a hostname mismatch.
+                  source={{ html: buildTurnstileHtml(action), baseUrl: 'https://localhost' }}
                   onMessage={onMessage}
                   onError={() => setLoadFailed(true)}
                   onHttpError={() => setLoadFailed(true)}
