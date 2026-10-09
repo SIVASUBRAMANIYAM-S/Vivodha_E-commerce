@@ -6,23 +6,23 @@ Flows are written as steps plus Mermaid diagrams. "Server" means Postgres (RLS /
 
 ```mermaid
 flowchart TD
-  A[App launch] --> B[Splash: restore session, load store_config]
-  B -->|session exists + location saved| H[Home]
-  B -->|first launch| W[Welcome]
-  W -->|Log in| L[Login] --> P
-  W -->|Sign up| S[Sign up] --> V[Verify email notice] --> P
-  W -->|Continue as guest| G[signInAnonymously] --> P
-  P[Location permission prompt] -->|granted| D[Auto-detect address + pincode]
-  P -->|denied| M[Manual address or pincode]
-  D --> C{serviceability-check}
+  A[App launch] --> B[Splash: wait on auth-store init]
+  B -->|session exists + pincode saved| H[Home]
+  B -->|no session| W[Welcome]
+  B -->|session, no pincode| P
+  W -->|Log in| L[Login, Turnstile-gated] --> SP[splash re-routes]
+  W -->|Sign up| S[Sign up, Turnstile-gated unless already a guest] --> CE[check-email] --> CB[callback: exchange code] --> SP
+  W -->|Continue as guest| G[Turnstile -> signInAnonymously] --> P
+  P[Location: use GPS or enter pincode] -->|GPS| D[On-device reverse geocode -> pincode, ADR-152]
+  P -->|manual| M[Pincode entry]
+  D --> C{check_pincode RPC}
   M --> C
-  C -->|serviceable| H
-  C -->|unserviceable| N["Coming soon, notify me" form]
-  N -->|change pincode| M
+  C -->|serviceable| AF[Address form] --> H
+  C -->|unserviceable| N[Waitlist: phone number] --> H
 ```
 
-- Location denial never blocks the user. The pincode is saved locally and on `profiles.default_pincode` for registered users.
-- The serviceability result is cached for the session. Home shows "Delivering to <pincode>".
+- Location denial/failure never blocks the user, and neither does an unserviceable pincode — both paths still reach Home (ADR-153). `location-store`'s `pincode`/`serviceable` fields are in-memory only for now; persistence lands with the full location feature (Step 8).
+- The confirmation-link deep link (`/callback`) only works in a dev client/production build (ADR-150); in Expo Go, `check-email` offers a "Continue" button that retries login once the link's been opened anywhere.
 
 ## 2. Guest checkout
 

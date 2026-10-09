@@ -6,8 +6,8 @@ Updated: 2026-10-09. Implementation in progress on this branch — not paused. T
 
 - Continue the existing `phase-3-mobile-auth-onboarding` branch; default branch is `main`.
 - Phase 2 work was merged before this branch was created. Phase 3 plan is approved.
-- Phase 3 changes are **uncommitted**. No Phase 3 commit, push, or PR was made by this assistant. A fresh clone will not include these working-tree changes.
-- Transfer the changed/new files below through an owner-approved method before continuing. Do not discard them or assume they are on the remote branch. Do not transfer credentials, CLI temporary state, or `node_modules`.
+- Phase 3 work is being **committed progressively to this branch** as each chunk lands (see "Work completed" below), not batched at the end. The branch has not been pushed or opened as a PR yet — that happens once the owner has reviewed on-device (Checkpoint 1, then Checkpoint 2).
+- Do not transfer credentials, CLI temporary state, or `node_modules` between computers.
 - On the next computer, read [CLAUDE.md](../CLAUDE.md), [.github/copilot-instructions.md](../.github/copilot-instructions.md), the Phase 3 specifications, and this handoff. Inspect `git status`, current branch, and recent commits before editing. This is continuation of an approved phase, not a new phase.
 - Do not use Docker. Do not commit/push the unfinished work without owner approval. Never merge into the default branch.
 
@@ -45,8 +45,14 @@ Modified:
 - `src/features/auth/`: `api/signup.ts`, `api/login.ts` (email direct, username via the still-to-be-written `username-login` Edge Function), `api/password-reset.ts`, `api/guest-conversion.ts`, `api/username-availability.ts` (debounced), `api/errors.ts` (`mapAuthError()` — the one place GoTrue/Edge-Function errors become friendly strings), `store/auth-store.ts` (Zustand, mirrors `onAuthStateChange`, initialized once from `app/_layout.tsx`), `components/PasswordStrengthMeter.tsx`.
 - `src/lib/function-error.ts` (new): parses an Edge Function's `{error:{code,message}}` body off `FunctionsHttpError`.
 - `apps/mobile/.env.example`: added `EXPO_PUBLIC_TURNSTILE_SITE_KEY=` (name only — the owner pastes the real value into `.env`).
+- Onboarding/auth screens (Step 6): `app/index.tsx` → `(onboarding)/splash` (waits on auth-store init, routes by session/pincode); `(onboarding)/welcome.tsx`; `(onboarding)/location/` restructured into a 4-route sub-stack (`index` choice, `search` pincode entry, `address-form`, `result`); `(auth)/login.tsx`, `signup.tsx` (branches into guest-conversion when already anonymous), `forgot-password.tsx`, plus three new screens `check-email.tsx`, `callback.tsx`, `set-new-password.tsx`.
+- `src/features/location/` (new, pulled forward from Step 8 — only the slice onboarding needs): `api/serviceability.ts` (`check_pincode` RPC, no Edge Function needed), `api/addresses.ts` (create only — list/update/delete/set-default are still Step 8), `api/waitlist.ts`, `components/AddressForm.tsx` (shared with Account's future "add address", per the plan's own intent).
+- `src/store/location-store.ts`: minimal in-memory `pincode`/`serviceable` fields (not yet persisted — Step 8 wraps this in `persist()`).
+- `app.json`: added the `expo-location` config plugin (permission string) — was missed when the package was installed.
+- ADR-149 through ADR-153 recorded in [decisions.md](decisions.md): PKCE + the single `/callback` deep-link target, the Expo Go deep-link limitation and its check-email fallback, Turnstile verified by GoTrue (not a second secret), the on-device-geocoder interim choice for GPS detection, and unserviceable-never-blocks.
+- Verified via `expo export --platform web`: every route in the app (new and existing) renders without error.
 
-Not yet started: onboarding/auth screens (Step 6), deep-link callback route, the four Edge Functions (Step 7), location feature (Step 8), Account tab rewrite. See "Remaining approved implementation" below, which is kept in the same order as the approved plan's steps.
+Not yet started: the four Edge Functions (Step 7), the rest of the location feature — list/edit/delete addresses, default selection, address switcher, `UnserviceableNotice`, `location-store` persistence (Step 8), Account tab rewrite. See "Remaining approved implementation" below, which is kept in the same order as the approved plan's steps.
 
 ## Hosted DEV status (owner-reported)
 
@@ -73,9 +79,9 @@ Database verification is done — the remaining work is entirely mobile app + Ed
 
 - [x] Turnstile WebView + persistent CAPTCHA-protected guest sign-in (PKCE client config, `TurnstileGate`/`TurnstileProvider`).
 - [x] Shared signup schemas, debounced availability, password strength, signup/login/password-reset API functions, guest-to-account conversion, friendly error mapping, `auth-store`. Guest-to-account conversion preserves the same auth user ID — confirmed against `@supabase/auth-js`'s actual `updateUser()` type signature (it does not accept `captchaToken`; the already-captcha-verified anonymous session needs none for that call).
-- [ ] Session restoration/start routing, Welcome, onboarding location sub-stack, auth screens (login/signup/forgot-password/check-email/callback/set-new-password) — Step 6, not started.
+- [x] Session restoration/start routing, Welcome, onboarding location sub-stack, auth screens (login/signup/forgot-password/check-email/callback/set-new-password) — Step 6.
+- **Next: Checkpoint 1.** The owner reviews this on a real Android phone in Expo Go before any Edge Function work starts. Login/signup via email will fully work once the Turnstile key + redirect URL below are set up; username login and Google-backed location search will not work yet (Step 7). Guest mode, Turnstile, and all navigation are fully testable now.
 - [ ] Four typed, validated, rate-limited Edge Functions: `username-login`, `geocode-reverse`, `places-autocomplete`, `places-details`. Google calls stay server-side; username login must not expose the resolved email and must use generic invalid-credential errors.
-- **Pause after auth/onboarding screens for real Android Expo Go screenshots/recordings. Web preview is not sign-off for this phase.**
 - [ ] Location permission/GPS, manual Places or pincode fallback, address form/CRUD/defaults, serviceability, waitlist, delivery-header address switcher and gentle unserviceable-cart notice.
 - [ ] Minimal Account guest/permanent views and explanatory deletion entry (full deletion deferred).
 - **Pause again after location for real Android Expo Go screenshots/recordings.**
