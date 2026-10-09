@@ -27,7 +27,7 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 
 - Full account deletion is deferred beyond this phase. The explanatory Account entry is not deletion; the complete in-app and web deletion flow must ship before Google Play release.
 - Owner supplies real delivery pincodes and ETAs; retain clearly marked development placeholders if none are available.
-- Owner must enter the public Turnstile site key locally. Never paste secret keys, Google credentials, or passwords into chat.
+- ~~Owner must enter the public Turnstile site key locally.~~ Done 2026-10-09 — set in the owner's local `apps/mobile/.env`, verified working on-device (ADR-154 fixed the one issue found: WebView origin needed `baseUrl: 'https://localhost'` to match the widget's registered hostname).
 - Owner approved hosted DEV validation without Docker. Apply the reviewed migration only to DEV, then run rollback-based pgTAP assertions in the SQL Editor before treating it as verified.
 
 13. **Guest → account when the email already exists:** auto-merge the guest orders after login, or link them manually through support?
@@ -35,6 +35,7 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 15. **Resolved:** Cloudflare Turnstile configured by owner (ADR-144).
 16. Age gate for DPDP (under-18 handling)?
 17. **Resolved:** Google Maps/Places calls are Edge Function-only; owner configured the secret (ADR-144). Confirm the required Google APIs are enabled and billing restrictions suit server-side calls; do not provide the key.
+18. **Password recovery is untested** — Expo Go can't open the `vivodha://` deep link, and unlike signup there's no retry-login fallback possible for it (ADR-156). Needs a dev client (EAS `expo-dev-client`) or production build to verify end-to-end before this phase can be considered fully checked. Raise with the owner before Checkpoint 2 or before merge, whichever comes first.
 
 ## Phase 5: catalog & home
 

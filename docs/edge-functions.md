@@ -10,37 +10,58 @@ Common conventions:
 - Idempotency: mutating calls accept an `Idempotency-Key` header (stored for 24 h).
 - Logging: no PII in logs. Errors go to Sentry (Phase 11).
 
-| Function               | Phase | Auth                        | Trigger                    |
-| ---------------------- | ----- | --------------------------- | -------------------------- |
-| username-login         | 4     | none (public, rate-limited) | HTTP                       |
-| serviceability-check   | 4     | none / any                  | HTTP                       |
-| place-order            | 6     | guest or customer JWT       | HTTP                       |
-| create-razorpay-order  | 6     | guest or customer JWT       | HTTP                       |
-| razorpay-webhook       | 6     | Razorpay signature (no JWT) | HTTP (webhook)             |
-| cancel-order           | 7     | owner JWT or admin          | HTTP                       |
-| points-credit          | 9     | cron (service)              | Scheduled (pg_cron → HTTP) |
-| points-expiry          | 9     | cron (service)              | Scheduled                  |
-| ai-shopping-list-parse | 10    | guest or customer JWT       | HTTP                       |
+| Function               | Phase | Auth                                                                   | Trigger                    |
+| ---------------------- | ----- | ---------------------------------------------------------------------- | -------------------------- |
+| username-login         | 3     | none (`verify_jwt=false`, rate-limited, dual: per-IP + per-identifier) | HTTP                       |
+| geocode-reverse        | 3     | any authenticated (incl. guest), per-user rate limit                   | HTTP                       |
+| places-autocomplete    | 3     | any authenticated, looser per-user budget (fires per keystroke)        | HTTP                       |
+| places-details         | 3     | any authenticated, per-user rate limit                                 | HTTP                       |
+| place-order            | 6     | guest or customer JWT                                                  | HTTP                       |
+| create-razorpay-order  | 6     | guest or customer JWT                                                  | HTTP                       |
+| razorpay-webhook       | 6     | Razorpay signature (no JWT)                                            | HTTP (webhook)             |
+| cancel-order           | 7     | owner JWT or admin                                                     | HTTP                       |
+| points-credit          | 9     | cron (service)                                                         | Scheduled (pg_cron → HTTP) |
+| points-expiry          | 9     | cron (service)                                                         | Scheduled                  |
+| ai-shopping-list-parse | 10    | guest or customer JWT                                                  | HTTP                       |
 
 ---
 
-## username-login
+## username-login — **Phase 3, planned, not yet deployed**
 
-Resolves a username to the user's email server-side and signs in, so emails are never exposed to clients.
+Resolves a username to the user's email server-side and signs in, so emails are never exposed to clients. Mobile client: `apps/mobile/src/features/auth/api/login.ts` already calls this (via `supabase.functions.invoke`) and falls back to direct `signInWithPassword` when the identifier looks like an email — it just can't succeed yet because the function doesn't exist on the hosted project.
 
-- **Input:** `{ identifier: string, password: string }`. If `identifier` contains `@` it is treated as an email.
-- **Process:** look up `usernames → auth.users.email` (SR), then call `signInWithPassword` against GoTrue and return the session.
-- **Output:** `200 { session: { access_token, refresh_token, expires_at, user } }`
-- **Errors:** `400 INVALID_INPUT`, `401 INVALID_CREDENTIALS` (the same response for an unknown user and a wrong password), `403 EMAIL_NOT_VERIFIED`, `429 RATE_LIMITED`.
-- **Notes:** Per-IP and per-identifier rate limit. Email-based login can call Supabase Auth directly from the client; this function exists for usernames.
-- **Alternative (decide in Phase 4):** an RPC that returns only "exists" + signs in. Returning a session from an Edge Function is the safer default.
+- **`supabase/config.toml`:** `[functions.username-login]` with `verify_jwt = false` — the platform must not reject the unauthenticated call before our code runs. The other three Phase 3 functions below keep the default `verify_jwt = true`.
+- **Input:** `{ identifier: string, password: string, captchaToken: string }`.
+- **Process:** look up `usernames → user_id` with a service-role client, resolve the email via `auth.admin.getUserById`, then sign in through a **separate anon-key client** calling `signInWithPassword({ email, password, options: { captchaToken } })`. This lets GoTrue itself verify the Turnstile token (it already holds the secret key via Attack Protection) rather than a second Cloudflare-secret-dependent verification path inside the function.
+- **Output:** `200 { session: { access_token, refresh_token, expires_at, expires_in, token_type, user: { id, email, is_anonymous } } }` — matches `UsernameLoginResponse` in `login.ts`.
+- **Errors:** `400 INVALID_INPUT`, `401 INVALID_CREDENTIALS` (identical response for an unknown username and a wrong password — never reveal which), `429 RATE_LIMITED` (dual: per-IP **and** per-identifier via `consume_request_limit`, both must pass).
+- **Notes:** Never returns the resolved email as its own field — only inside `session.user.email`, same shape as the direct email-login path, so there's no way to enumerate usernames → emails from the response shape alone.
 
-## serviceability-check
+## geocode-reverse — **Phase 3, planned, not yet deployed**
 
-- **Input:** `{ pincode: string }` (6 digits)
-- **Output:** `200 { serviceable: boolean, pincode, city?, deliveryMode?: 'own_delivery'|'courier', deliveryFeePaise?, freeDeliveryThresholdPaise?, etaText?, codAllowed?, codMaxPaise? }`
-- **Errors:** `400 INVALID_PINCODE`
-- **Auth:** none required (cached at the edge for 5 minutes). This could also be a plain RLS read of `serviceable_pincodes`. A function keeps the response shape stable and makes it easy to add a courier API later.
+- **Input:** `{ lat: number, lng: number }`
+- **Process:** call Google's Geocoding API server-side (secret lives only in this function's Edge Function secret), parse `address_components` by `types` into a flat shape.
+- **Output:** `200 { line1, area, city, state, pincode, formattedAddress }`
+- **Errors:** `400 INVALID_INPUT`, `404 NO_RESULT`, `429 RATE_LIMITED` (per-user), `502 PROVIDER_ERROR`.
+- **Auth:** any authenticated session, including an anonymous guest.
+- **Mobile interim:** until this ships, `app/(onboarding)/location/index.tsx`'s "use my current location" uses `expo-location`'s on-device reverse geocoder instead (ADR-152) — the detected pincode is always shown for the user to confirm/edit before a serviceability check runs. Once this function ships, swap that call for `supabase.functions.invoke('geocode-reverse', ...)` and compare accuracy before removing the on-device fallback.
+
+## places-autocomplete — **Phase 3, planned, not yet deployed**
+
+- **Input:** `{ query: string, sessionToken: string }` — India-restricted (`components=country:in`). The session token groups one search session for Google's session-based Places billing.
+- **Output:** `200 { suggestions: [{ placeId, description }] }`
+- **Errors:** `400 INVALID_INPUT`, `429 RATE_LIMITED` (per-user, looser budget since it fires per keystroke), `502 PROVIDER_ERROR`.
+- **Auth:** any authenticated session.
+- **Mobile:** not wired up yet — `location/search.tsx` currently only takes a typed pincode (ADR unassigned; see docs/phase-3-handoff.md Step 8).
+
+## places-details — **Phase 3, planned, not yet deployed**
+
+- **Input:** `{ placeId: string, sessionToken: string }` — same session token as the autocomplete call that produced `placeId` (closes out Google's session-based billing).
+- **Output:** `200 { address: { line1, area, city, state, pincode }, lat, lng }`
+- **Errors:** `400 INVALID_INPUT`, `404 NOT_FOUND`, `429 RATE_LIMITED` (per-user), `502 PROVIDER_ERROR`.
+- **Auth:** any authenticated session.
+
+**Serviceability is not an Edge Function.** It's the `check_pincode` Postgres RPC (migration 14, `supabase/migrations/20261008143000_14_auth_onboarding.sql`) — a plain RLS-safe read, no network call needed. `apps/mobile/src/features/location/api/serviceability.ts` already calls it directly. This replaces the Phase 0 draft's `serviceability-check` Edge Function concept above; keeping the RPC approach avoids a network round-trip for something that's just a table lookup.
 
 ## place-order
 
