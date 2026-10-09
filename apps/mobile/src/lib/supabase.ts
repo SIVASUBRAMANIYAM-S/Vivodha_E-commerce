@@ -20,6 +20,11 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE: email confirmation/recovery links carry a `?code=...` query param
+    // (exchanged in app/(auth)/callback.tsx), not an implicit-flow URL
+    // fragment, which is far easier to parse reliably from a native deep
+    // link. Supabase's own recommendation for mobile (ADR-149).
+    flowType: 'pkce',
   },
 });
 
@@ -36,15 +41,19 @@ if (Platform.OS !== 'web') {
 
 /**
  * Returns the current session, or creates an anonymous (guest) session.
- * Guests can browse and order. Anonymous sign-in must be enabled in the Supabase dashboard.
- * Wired into onboarding in Phase 4.
+ * Guests can browse and order. Anonymous sign-in requires a solved Turnstile
+ * challenge (Supabase Attack Protection) — call this only after
+ * useTurnstile().present('guest') resolves, never eagerly. See
+ * src/components/auth/TurnstileGate.tsx.
  */
-export async function ensureGuestSession(): Promise<Session> {
+export async function ensureGuestSession(captchaToken: string): Promise<Session> {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
   if (data.session) return data.session;
 
-  const { data: anon, error: anonError } = await supabase.auth.signInAnonymously();
+  const { data: anon, error: anonError } = await supabase.auth.signInAnonymously({
+    options: { captchaToken },
+  });
   if (anonError) throw anonError;
   if (!anon.session) throw new Error('Anonymous sign-in returned no session');
   return anon.session;

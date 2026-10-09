@@ -17,19 +17,25 @@ Every mobile and admin screen, with its route, main components, and the four sta
 
 ### Onboarding: `app/(onboarding)/`
 
-| Screen   | Route       | Components                                                                                         | Notes / special states                                                            |
-| -------- | ----------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Splash   | `/splash`   | LogoMark, wordmark, tagline                                                                        | Restores the session, loads `store_config`. Error → "Can't reach Vivodha" + Retry |
-| Welcome  | `/welcome`  | Brand hero, Button×3 (Log in / Sign up / Continue as guest)                                        | Guest → anonymous sign-in. Loading state on the guest button                      |
-| Location | `/location` | Permission explainer, Detect button, AddressForm, PincodeInput, ServiceabilityResult, NotifyMeForm | Permission denied → manual entry. Unserviceable → "Coming soon, notify me"        |
+| Screen            | Route                    | Components                                                         | Notes / special states                                                                                                 |
+| ----------------- | ------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Splash            | `/splash`                | Wordmark, ActivityIndicator                                        | Waits on auth-store init, then routes: no session → Welcome; session + no pincode → Location; session + pincode → Home |
+| Welcome           | `/welcome`               | Brand hero, Button×3 (Create account / Log in / Continue as guest) | Guest → Turnstile, then anonymous sign-in; routes to Location                                                          |
+| Location: choice  | `/location`              | Button×2 (Use current location / Enter pincode manually)           | GPS path uses `expo-location`'s on-device geocoder for the pincode (interim — ADR-152); denied/failed → manual entry   |
+| Location: search  | `/location/search`       | Input (pincode)                                                    | Calls `check_pincode` directly (no Edge Function needed)                                                               |
+| Location: result  | `/location/result`       | Success/unserviceable states, phone Input, NotifyMe Button         | Unserviceable → waitlist signup (phone only), then continues to Home regardless (never blocks browsing — ADR-153)      |
+| Location: address | `/location/address-form` | `AddressForm` (shared with Account's future "add address")         | Pincode pre-filled and locked; creates the first `addresses` row                                                       |
 
 ### Auth: `app/(auth)/`
 
-| Screen          | Route              | Components                                                         | Notes                                                               |
-| --------------- | ------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| Login           | `/login`           | Input (username or email), PasswordInput, Button, links            | Generic error copy. Rate-limit message                              |
-| Sign up         | `/signup`          | Inputs: name, username (live availability), email, password, phone | Username taken → inline error. Success → "Verify your email" screen |
-| Forgot password | `/forgot-password` | EmailInput, Button, success notice                                 | The same success copy whether or not the email exists               |
+| Screen           | Route               | Components                                                                          | Notes                                                                                                                |
+| ---------------- | ------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Login            | `/login`            | Input (username or email), PasswordInput, Button, links                             | Generic error copy for wrong password/unknown username/unknown email alike                                           |
+| Sign up          | `/signup`           | Inputs: name, username (live availability), email, phone, password + strength meter | If an anonymous session is already active, submits through guest-conversion instead of a fresh signup (same user id) |
+| Forgot password  | `/forgot-password`  | EmailInput, Button                                                                  | Same next screen (check-email) regardless of whether the email exists                                                |
+| Check email      | `/check-email`      | Confirmation message; Expo-Go-only "Continue" button                                | The Continue button re-attempts login once the link's been opened anywhere — see ADR-150                             |
+| Callback         | `/callback`         | ActivityIndicator, ErrorState                                                       | PKCE deep-link target for every email link; exchanges `?code=`, routes by `type` (recovery vs. confirmation)         |
+| Set new password | `/set-new-password` | PasswordInput ×2 + strength meter, Button                                           | Only reachable after callback exchanges a `type=recovery` code                                                       |
 
 ### Tabs: `app/(tabs)/`
 

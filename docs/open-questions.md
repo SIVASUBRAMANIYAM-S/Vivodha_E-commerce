@@ -17,19 +17,25 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 8. ~~**Return window per category**~~: done 2026-10-08 (ADR-126, ADR-127).
 9. ~~**Sample catalog for seed data**~~: done 2026-10-08, 40 placeholder products seeded in Phase 1. Real product data/images remain open (see Q10, Q11).
 
-## Phase 3: admin core
+## Phase 4: admin core
 
 10. Product data source: manual entry, CSV import, or a supplier feed?
 11. Image guidelines (size, background) and who supplies product photos. Competitor images must not be used.
 12. ~~**First admin user**~~: done 2026-10-08, `sivasaravanan492@gmail.com` seeded as super_admin (ADR-131). Further admin users remain open.
 
-## Phase 4: auth, guest & onboarding
+## Phase 3: auth, guest & onboarding
+
+- Full account deletion is deferred beyond this phase. The explanatory Account entry is not deletion; the complete in-app and web deletion flow must ship before Google Play release.
+- Owner supplies real delivery pincodes and ETAs; retain clearly marked development placeholders if none are available.
+- ~~Owner must enter the public Turnstile site key locally.~~ Done 2026-10-09 — set in the owner's local `apps/mobile/.env`, verified working on-device (ADR-154 fixed the one issue found: WebView origin needed `baseUrl: 'https://localhost'` to match the widget's registered hostname).
+- Owner approved hosted DEV validation without Docker. Apply the reviewed migration only to DEV, then run rollback-based pgTAP assertions in the SQL Editor before treating it as verified.
 
 13. **Guest → account when the email already exists:** auto-merge the guest orders after login, or link them manually through support?
 14. Minimum password policy (length, complexity, breached-password check).
-15. CAPTCHA provider for anonymous sign-ins (hCaptcha vs Cloudflare Turnstile).
+15. **Resolved:** Cloudflare Turnstile configured by owner (ADR-144).
 16. Age gate for DPDP (under-18 handling)?
-17. Google Maps/Places API key and billing account (for auto-detect + address autocomplete), or start with device geocoding only?
+17. **Resolved:** Google Maps/Places calls are Edge Function-only; owner configured the secret (ADR-144). Confirm the required Google APIs are enabled and billing restrictions suit server-side calls; do not provide the key.
+18. **Password recovery is untested** — Expo Go can't open the `vivodha://` deep link, and unlike signup there's no retry-login fallback possible for it (ADR-156). Needs a dev client (EAS `expo-dev-client`) or production build to verify end-to-end before this phase can be considered fully checked. Raise with the owner before Checkpoint 2 or before merge, whichever comes first.
 
 ## Phase 5: catalog & home
 

@@ -104,6 +104,19 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 
 ## Testing
 
+### Phase 3 migration (pending owner application)
+
+Migration `20261008143000_14_auth_onboarding.sql` adds:
+
+- RLS-protected backend-only `request_rate_limits` and `username_reservations`; no anon/customer table privileges or policies.
+- Backend-only `consume_request_limit` and identity trigger, with EXECUTE explicitly revoked from PUBLIC, anon and authenticated.
+- Boolean-only, rate-limited `username_available` for anon/authenticated. Username client inserts are revoked; confirmed Auth changes finalize the username/profile atomically.
+- `check_pincode` for anon/authenticated, projecting only serviceable/mode/eta_text/cod_available/min_order_paise. The former public coverage SELECT policy is removed; admin policies remain.
+- `pincode_waitlist`: only pincode/email/phone INSERT columns for anon/authenticated, server-assigned user ID, admin-only SELECT, no client UPDATE/DELETE. Historical request rows remain in the old table, whose client INSERT privilege is revoked.
+- Authenticated `set_default_address`, including guests: caller-owned address only, serialized per profile, one default and matching profile pincode.
+
+New assertions live in `supabase/tests/database/05_auth_onboarding.sql`. These tests have not yet run. The owner approved hosted DEV validation without Docker: after applying the reviewed migration, enable the `pgtap` extension in the `extensions` schema and run the complete test file in the SQL Editor. It begins a transaction and ends with `rollback`; test users, addresses and rate-limit rows are not retained. If execution errors before the final rollback, run `rollback;` before retrying. Do not treat the migration as database-tested until all assertions pass.
+
 `supabase/tests/database/*.sql` has a pgTAP suite covering RLS-enabled-on-every-table, the `admin_invites` → `admin_users` signup trigger, anon/guest/customer/admin access patterns for the tables above, ledger immutability, the status-transition guard, and the order/invoice number generators.
 
 **Could not be run in this environment** (no Docker, so no local Supabase stack, so no `pnpm supabase test db`). Instead, every one of these assertions was verified by hand against a throwaway local Postgres 17 cluster with a minimal Supabase-compatible shim (`auth.uid()`/`auth.jwt()`, `storage.objects`, the `anon`/`authenticated`/`service_role` roles) — all 13 migrations applied cleanly from zero, the seed applied and re-ran idempotently, and all 40 manual test assertions passed. Run `pnpm supabase test db` after `supabase start` to execute the real pgTAP suite.
