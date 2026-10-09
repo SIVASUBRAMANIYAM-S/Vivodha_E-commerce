@@ -14,6 +14,7 @@ import { VariantSelectorProvider } from '@/components/commerce/VariantSelector';
 import { FlyToCartProvider } from '@/components/motion/FlyToCart';
 import { ScrollChromeProvider } from '@/components/motion/ScrollChrome';
 import { ToastProvider } from '@/components/ui/Toast';
+import { initAuthStore } from '@/features/auth/store';
 import { queryClient } from '@/lib/query-client';
 import { duration, fontAssets, fontFor, lightTheme, ThemeProvider } from '@/theme';
 
@@ -22,6 +23,8 @@ void SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   // Fonts load while the splash screen is up, so no text ever flashes unstyled.
   const [fontsLoaded, fontError] = useFonts(fontAssets);
+
+  useEffect(() => initAuthStore(), []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) void SplashScreen.hideAsync();
