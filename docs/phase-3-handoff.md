@@ -1,6 +1,6 @@
 # Phase 3 handoff
 
-Updated: 2026-10-08. Work paused at the owner's request to continue on another computer.
+Updated: 2026-10-09. Implementation in progress on this branch — not paused. This section is kept current as each commit lands so anyone pulling the branch mid-phase has an accurate picture.
 
 ## Branch and transfer
 
@@ -24,7 +24,7 @@ Created [migration 14](../supabase/migrations/20261008143000_14_auth_onboarding.
 - Insert-only public/customer pincode waitlist with admin-only reads. Historical serviceability requests retained, with new client inserts revoked.
 - Atomic own-address default selection RPC.
 
-Created [Phase 3 pgTAP tests](../supabase/tests/database/05_auth_onboarding.sql), covering privileges/RLS, signup confirmation, same-user guest conversion/address preservation, username claims, serviceability, waitlist access, limiter validation, and address ownership/defaults. **These tests have not been run successfully yet.**
+Created [Phase 3 pgTAP tests](../supabase/tests/database/05_auth_onboarding.sql), covering privileges/RLS, signup confirmation, same-user guest conversion/address preservation, username claims, serviceability, waitlist access, limiter validation, and address ownership/defaults. **The owner ran the full test script against hosted DEV on 2026-10-09: all 32 assertions passed (`ok 1` through `ok 32`).** `packages/shared/src/types/database.ts` was regenerated (`pnpm db:types`) immediately after, so all Phase 3 code is built against real generated types, not hand-written ones.
 
 ### Documentation
 
@@ -36,7 +36,17 @@ Modified:
 - [open-questions.md](open-questions.md): real pincodes, owner-entered site key, deletion deferral and hosted validation.
 - This handoff is a new file.
 
-No Phase 3 mobile screens, Edge Functions, dependency additions, or generated database-type updates have been implemented yet.
+### Mobile app (this branch, since pgTAP verification)
+
+- `expo-location` and `react-native-webview` installed (`npx expo install`), the only two pre-approved libraries not already present.
+- `src/lib/supabase.ts`: client config switched to `flowType: 'pkce'` (stable `?code=` deep links); `ensureGuestSession(captchaToken)` now requires a solved Turnstile token.
+- `src/lib/turnstile.ts` (new): builds the self-contained Turnstile widget HTML for the WebView.
+- `src/components/auth/TurnstileGate.tsx` (new) + `TurnstileProvider`, mounted in `app/_layout.tsx`: `useTurnstile().present(action)` returns a Promise of the solved token, or rejects with `CAPTCHA_CANCELLED`/`CAPTCHA_EXPIRED`/`CAPTCHA_FAILED:*`.
+- `src/features/auth/`: `api/signup.ts`, `api/login.ts` (email direct, username via the still-to-be-written `username-login` Edge Function), `api/password-reset.ts`, `api/guest-conversion.ts`, `api/username-availability.ts` (debounced), `api/errors.ts` (`mapAuthError()` — the one place GoTrue/Edge-Function errors become friendly strings), `store/auth-store.ts` (Zustand, mirrors `onAuthStateChange`, initialized once from `app/_layout.tsx`), `components/PasswordStrengthMeter.tsx`.
+- `src/lib/function-error.ts` (new): parses an Edge Function's `{error:{code,message}}` body off `FunctionsHttpError`.
+- `apps/mobile/.env.example`: added `EXPO_PUBLIC_TURNSTILE_SITE_KEY=` (name only — the owner pastes the real value into `.env`).
+
+Not yet started: onboarding/auth screens (Step 6), deep-link callback route, the four Edge Functions (Step 7), location feature (Step 8), Account tab rewrite. See "Remaining approved implementation" below, which is kept in the same order as the approved plan's steps.
 
 ## Hosted DEV status (owner-reported)
 
@@ -51,37 +61,35 @@ DEV project ref: `nzltgmfodazrhrxufpwe` (public identifier, not a credential).
    create extension if not exists pgtap with schema extensions;
    ```
 
-5. **The complete pgTAP test script is still pending.** Extension installation returning no rows is expected; it is not test-pass evidence.
+5. **The complete pgTAP test script passed on 2026-10-09**: all 32 assertions `ok`. Database types were regenerated the same day.
 
-The migration is already applied to DEV. Do not edit the applied migration to fix a schema bug; use a new corrective migration and the owner-run push gate. Local edits to tests/docs do not alter hosted schema.
+The migration is already applied to DEV and confirmed correct. Do not edit the applied migration to fix a schema bug; use a new corrective migration and the owner-run push gate. Local edits to tests/docs do not alter hosted schema.
 
 ## Exact next steps
 
-1. Ask the owner to run the **entire** [test script](../supabase/tests/database/05_auth_onboarding.sql) in the DEV Supabase SQL Editor, including its opening transaction and final rollback. SQL is not a PowerShell command. Inspect every assertion for `not ok`; a generic query-success message is insufficient. If an error prevents the final rollback, run `rollback;` separately. Ask for sanitized results only.
-2. Resolve any failures without Docker. Distinguish a test-harness issue from a schema defect. Do not claim database validation passed until actual results are available.
-3. After tests pass, regenerate database types using `pnpm db:types`. On the new computer, owner may need to authenticate/link the Supabase CLI again; enter credentials privately, never in files or chat.
-4. Continue the approved implementation below. Read [apps/mobile/AGENTS.md](../apps/mobile/AGENTS.md) and version-matched documentation before mobile changes.
+Database verification is done — the remaining work is entirely mobile app + Edge Functions. Continue the approved implementation below, in order. Read [apps/mobile/AGENTS.md](../apps/mobile/AGENTS.md) and version-matched documentation before mobile changes.
 
 ## Remaining approved implementation
 
-- Session restoration/start routing, Welcome, Turnstile WebView, persistent CAPTCHA-protected guest sign-in.
-- Shared signup schemas, debounced availability, password strength, signup/email confirmation/deep links, username/email login, password reset, friendly errors and logout.
-- Guest-to-account conversion must preserve the same auth user ID/cart/addresses. Verify Supabase confirmation/password ordering rather than assuming a combined update works.
-- Four typed, validated, rate-limited Edge Functions: `username-login`, `geocode-reverse`, `places-autocomplete`, `places-details`. Google calls stay server-side; username login must not expose the resolved email and must use generic invalid-credential errors.
-- **Pause after auth for real Android Expo Go screenshots/recordings. Web preview is not sign-off for this phase.**
-- Location permission/GPS, manual Places or pincode fallback, address form/CRUD/defaults, serviceability, waitlist, delivery-header address switcher and gentle unserviceable-cart notice.
-- Minimal Account guest/permanent views and explanatory deletion entry (full deletion deferred).
+- [x] Turnstile WebView + persistent CAPTCHA-protected guest sign-in (PKCE client config, `TurnstileGate`/`TurnstileProvider`).
+- [x] Shared signup schemas, debounced availability, password strength, signup/login/password-reset API functions, guest-to-account conversion, friendly error mapping, `auth-store`. Guest-to-account conversion preserves the same auth user ID — confirmed against `@supabase/auth-js`'s actual `updateUser()` type signature (it does not accept `captchaToken`; the already-captcha-verified anonymous session needs none for that call).
+- [ ] Session restoration/start routing, Welcome, onboarding location sub-stack, auth screens (login/signup/forgot-password/check-email/callback/set-new-password) — Step 6, not started.
+- [ ] Four typed, validated, rate-limited Edge Functions: `username-login`, `geocode-reverse`, `places-autocomplete`, `places-details`. Google calls stay server-side; username login must not expose the resolved email and must use generic invalid-credential errors.
+- **Pause after auth/onboarding screens for real Android Expo Go screenshots/recordings. Web preview is not sign-off for this phase.**
+- [ ] Location permission/GPS, manual Places or pincode fallback, address form/CRUD/defaults, serviceability, waitlist, delivery-header address switcher and gentle unserviceable-cart notice.
+- [ ] Minimal Account guest/permanent views and explanatory deletion entry (full deletion deferred).
 - **Pause again after location for real Android Expo Go screenshots/recordings.**
-- Update related user-flow/screen/Edge Function/RLS/phase/decision/open-question docs; run lint, typecheck, format and Expo Doctor; verify both apps start; review secrets/RLS; Conventional Commits with Copilot co-author, branch push and templated PR. Never merge.
+- [ ] Update related user-flow/screen/Edge Function/RLS/phase/decision/open-question docs; run lint, typecheck, format and Expo Doctor; verify both apps start; review secrets/RLS; Conventional Commits, branch push and templated PR. Never merge.
 
 ## Configuration and constraints
 
 - Owner reports Resend SMTP, Turnstile attack protection, and Google Maps Edge Function secret configured.
-- Ask owner to enter the public Turnstile site key locally as `EXPO_PUBLIC_TURNSTILE_SITE_KEY`; add its name to the env example. Never ask for a key/password in chat. Exact Supabase redirect URLs, including the actual Expo Go development URL on the new computer, still need documenting/configuring.
+- `EXPO_PUBLIC_TURNSTILE_SITE_KEY` name added to `apps/mobile/.env.example`; **owner still needs to paste the real public site key into `apps/mobile/.env`** — `src/lib/turnstile.ts` throws a clear error at import time until that's done. Never ask for a key/password in chat.
+- **Owner action still needed:** add `vivodha://**` to Supabase Dashboard → Authentication → URL Configuration → Redirect URLs (no `exp://` entry — Expo Go's URL is unstable per-network/port, so it can't be a deep-link target; Expo Go flows fall back to an in-app "Continue" button instead, per the approved plan's Step 5).
 - Ask for real delivery pincodes/ETAs; keep marked development placeholders if unavailable.
 - Only pre-approved new libraries: `react-native-webview`, `expo-location`, `expo-linking`, `expo-secure-store` (the latter two already exist). Install mobile packages with `npx expo install`; ask before any other library.
 - Preserve existing UI kit/tokens/motion, accessibility, reduced motion, loading/empty/error/offline states, and keyboard-safe forms. UX patterns only; no competitor assets.
-- Existing `ensureGuestSession()` signs in without CAPTCHA and must be replaced/adapted. Existing startup/auth/location/account routes are not Phase 3-complete.
+- `ensureGuestSession(captchaToken)` now requires a solved Turnstile token (done). Existing startup/auth/location/account routes are still Phase 0/2 placeholders, not yet Phase 3-complete (Step 6 onward).
 - Preserve existing auth profile/admin-invite triggers and secure session storage. No passwords stored. Clear user-scoped state on logout/account switch; retain cart for same-ID conversion.
 - Start mobile via `pnpm dev:mobile` from the repository root, not plain root-level Expo startup (which previously resolved the wrong App entry).
 
