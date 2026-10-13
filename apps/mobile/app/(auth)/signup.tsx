@@ -1,11 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { AuthFormScreen } from '@/features/auth/components/AuthFormScreen';
 
 export default function SignupScreen() {
-  return (
-    <PlaceholderScreen
-      title="Create account"
-      phase="Phase 4"
-      description="Name, username, email, password, phone. Email verification."
-    />
-  );
+  return <AuthFormScreen mode="signup" />;
 }

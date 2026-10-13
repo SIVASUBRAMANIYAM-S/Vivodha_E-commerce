@@ -3,6 +3,7 @@ import type { Database } from '@vivodha/shared/types';
 import { AppState, Platform } from 'react-native';
 
 import { secureStorage } from './secure-storage';
+import { captchaOptions } from './captcha-policy';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -20,6 +21,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });
 
@@ -37,14 +39,16 @@ if (Platform.OS !== 'web') {
 /**
  * Returns the current session, or creates an anonymous (guest) session.
  * Guests can browse and order. Anonymous sign-in must be enabled in the Supabase dashboard.
- * Wired into onboarding in Phase 4.
+ * New guest sessions require a fresh Turnstile challenge, except in explicitly opted-in DEV.
  */
-export async function ensureGuestSession(): Promise<Session> {
+export async function ensureGuestSession(captchaToken: string): Promise<Session> {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
   if (data.session) return data.session;
 
-  const { data: anon, error: anonError } = await supabase.auth.signInAnonymously();
+  const { data: anon, error: anonError } = await supabase.auth.signInAnonymously({
+    options: captchaOptions(captchaToken),
+  });
   if (anonError) throw anonError;
   if (!anon.session) throw new Error('Anonymous sign-in returned no session');
   return anon.session;

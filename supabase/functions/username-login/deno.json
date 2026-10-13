@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@vivodha/shared/constants": "../../../packages/shared/src/constants/index.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2",
+    "zod": "npm:zod@4.6.5"
+  }
+}
