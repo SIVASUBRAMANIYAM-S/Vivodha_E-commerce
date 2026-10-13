@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [attempt, setAttempt] = useState(0);
   const lastUserId = useRef<string | null | undefined>(undefined);
   const consumedLink = useRef<string | null>(null);
+  const recoveryEvent = useRef(false);
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
   const finishRecovery = useCallback(() => setRecovery(false), []);
   const dismissError = useCallback(() => setError(null), []);
@@ -59,9 +60,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange((event, next) => {
       apply(next);
       if (useCartStore.persist.hasHydrated()) bindCart();
-      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryEvent.current = true;
+        setRecovery(true);
+      }
       if (event === 'SIGNED_IN') setError(null);
-      if (event === 'SIGNED_OUT') setRecovery(false);
+      if (event === 'SIGNED_OUT') {
+        recoveryEvent.current = false;
+        setRecovery(false);
+      }
     });
 
     async function consume(url: string): Promise<boolean> {
@@ -72,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
       if (callback.kind === 'error') throw new Error(callback.message);
+      recoveryEvent.current = false;
       const result =
         callback.kind === 'session'
           ? await supabase.auth.setSession({
@@ -81,11 +89,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : await supabase.auth.exchangeCodeForSession(callback.code);
       if (result.error) throw result.error;
       consumedLink.current = url;
+      const isRecovery = callback.recovery || recoveryEvent.current;
       if (active) {
         setError(null);
         apply(result.data.session);
-        setRecovery(callback.recovery);
-        if (callback.recovery || callback.conversion) router.replace('/set-password');
+        setRecovery(isRecovery);
+        if (isRecovery || callback.conversion) router.replace('/set-password');
         else router.replace('/');
       }
       return true;

@@ -15,14 +15,20 @@ export function parseAuthCallback(url: string): AuthCallback {
   const matches =
     parsed.pathname === '/auth-callback' ||
     parsed.pathname === '/--/auth-callback' ||
-    (parsed.protocol === 'vivodha:' && parsed.hostname === 'auth-callback' && !parsed.pathname);
+    parsed.pathname === '/callback' ||
+    parsed.pathname === '/--/callback' ||
+    (parsed.protocol === 'vivodha:' &&
+      (parsed.hostname === 'auth-callback' || parsed.hostname === 'callback') &&
+      !parsed.pathname);
   if (!matches) return { kind: 'none' };
   const values = new URLSearchParams(parsed.hash.slice(1));
   const error = values.get('error') ?? parsed.searchParams.get('error');
   if (error)
     return { kind: 'error', message: 'This email link is invalid or expired. Request a new one.' };
   const recovery =
-    values.get('type') === 'recovery' || parsed.searchParams.get('intent') === 'recovery';
+    values.get('type') === 'recovery' ||
+    parsed.searchParams.get('type') === 'recovery' ||
+    parsed.searchParams.get('intent') === 'recovery';
   const conversion = parsed.searchParams.get('intent') === 'conversion';
   const accessToken = values.get('access_token');
   const refreshToken = values.get('refresh_token');

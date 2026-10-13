@@ -73,3 +73,10 @@ export type PointsLedgerReason = (typeof POINTS_LEDGER_REASONS)[number];
 export const PINCODE_REGEX = /^[1-9][0-9]{5}$/;
 export const PHONE_REGEX_IN = /^[6-9][0-9]{9}$/;
 export const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
+
+/** Debounce before calling the rate-limited username_available RPC (Phase 3). */
+export const USERNAME_AVAILABILITY_DEBOUNCE_MS = 400;
+
+/** Mirrors the address label choices in packages/shared/src/schemas (Phase 3). */
+export const ADDRESS_LABELS = ['home', 'work', 'other'] as const;
+export type AddressLabel = (typeof ADDRESS_LABELS)[number];

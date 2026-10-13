@@ -36,6 +36,8 @@ Every mobile and admin screen, with its route, main components, and the four sta
 
 **Phase 3 auth checkpoint (2026-10-13):** the auth routes above and startup session gate are implemented, using keyboard-safe forms, shared validation, debounced boolean username checks, friendly errors, offline-disabled mutations, masked passwords and accessible strength feedback. Account shows guest conversion/login prompts or permanent name/username/email/phone plus logout/cart clearing and an explanatory deletion entry. Address CRUD, full deletion, and location/serviceability screens remain pending. `/location` currently states that setup is pending and permits browsing without claiming serviceability. Android Expo Go recordings are required before proceeding to location implementation.
 
+**Merge integration:** `/callback` and `/set-new-password` are compatibility aliases, not separate auth/session implementations. The teammate's location-choice, pincode search/result, waitlist and create-address prototype routes are preserved under `/location/*`; `/location` remains the pending checkpoint entry. These prototypes still require complete validation/offline behavior, persistence, full CRUD, Google APIs and Android review before normal onboarding integration. The base Screen keyboard avoidance fix is retained.
+
 ### Tabs: `app/(tabs)/`
 
 | Screen     | Route         | Components                                                                                                                                                                                                           | Empty / special states                                                                       |

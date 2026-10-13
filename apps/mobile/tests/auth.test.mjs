@@ -91,6 +91,23 @@ test('callback parser rejects expired and incomplete links and ignores other rou
   assert.equal(parseAuthCallback('http://localhost:8081/auth-callback?code=test').kind, 'code');
 });
 
+test('incoming legacy callback routes share the canonical PKCE and recovery handler', () => {
+  for (const url of [
+    'vivodha://callback?code=legacy-code&type=recovery',
+    'exp://192.0.2.1:8081/--/callback?code=legacy-code&type=recovery',
+    'http://localhost:8081/callback?code=legacy-code&type=recovery',
+  ]) {
+    assert.deepEqual(parseAuthCallback(url), {
+      kind: 'code',
+      code: 'legacy-code',
+      recovery: true,
+      conversion: false,
+    });
+  }
+  assert.equal(parseAuthCallback('vivodha://callback-fake?code=test').kind, 'none');
+  assert.equal(parseAuthCallback('http://localhost:8081/callback/other?code=test').kind, 'none');
+});
+
 test('guest conversion cannot reach password setup until email confirmation', () => {
   const metadata = { account_conversion_pending: true };
   assert.equal(

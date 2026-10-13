@@ -24,6 +24,7 @@ flowchart TD
 - Location denial never blocks the user. The pincode is saved locally and on `profiles.default_pincode` for registered users.
 - The serviceability result is cached for the session. Home shows "Delivering to <pincode>".
 - Phase 3 auth checkpoint (2026-10-13): session restoration, auth screens and Account identity/logout are implemented. Location setup is explicitly pending the required Android auth review; its temporary screen offers browsing without claiming a serviceability result. Address CRUD and serviceability UI are not yet implemented.
+- Merge integration (2026-10-13): teammate GPS/manual-pincode, coverage/waitlist and create-address prototypes are retained under `/location/choice`, `/location/search`, `/location/result` and `/location/address-form`. The normal `/location` entry stays pending until review and full integration. Prototype location state is in-memory; full CRUD, persistence, Google endpoints and header/cart integration are still pending.
 
 ## 2. Guest checkout
 
@@ -71,6 +72,8 @@ In Supabase Auth URL Configuration, add these redirect URLs (development host ve
 - Optional browser-only development: `http://localhost:8081/auth-callback`, plus the same `?intent=conversion` and `?intent=recovery` variants.
 
 The app derives redirects with `expo-linking.createURL`, not a hardcoded IP. The `vivodha` scheme works in installed builds; Expo Go uses the `exp` URL. Open confirmation/recovery links on the same phone. Set hosted minimum password length to 8, keep email confirmation ON, and enable manual identity linking. The local config reflects the password/linking requirements but has not been pushed to hosted Auth configuration.
+
+The reconciled client uses PKCE. `/auth-callback` is the canonical target; legacy `/callback` links and `/set-new-password` routes from the teammate implementation delegate to the same provider/forms. Add exact legacy callback URLs only if testing previously issued links; new reset/conversion requests include explicit intent. PKCE confirmation links must be opened in the app/browser that requested them, where the verifier is stored. Old implicit-token callbacks remain supported. Never retain passwords for a post-confirmation login fallback.
 
 The owner entered `EXPO_PUBLIC_TURNSTILE_SITE_KEY` locally. Allowlist `nzltgmfodazrhrxufpwe.supabase.co` for the default native WebView origin, and `localhost` only if testing the browser preview. Never paste keys, passwords, or email-link tokens into review feedback. Browser rendering is not Android sign-off.
 
