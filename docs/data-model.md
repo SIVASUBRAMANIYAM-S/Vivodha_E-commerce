@@ -16,7 +16,7 @@
 
 ## Conventions
 
-### Phase 3 additions (pending migration application)
+### Phase 3 additions (applied to hosted DEV)
 
 - `username_reservations(username, user_id, expires_at)` holds pending signup claims for 24 hours; it is backend-only. Confirmation publishes the username and profile fields atomically.
 - `request_rate_limits(scope, subject, window_start, attempts)` is backend-only; its atomic limiter is reusable by Edge Functions. No passwords, tokens, raw email addresses or Google keys belong in this table.

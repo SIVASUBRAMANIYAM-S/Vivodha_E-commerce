@@ -1,7 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { AuthFormScreen } from '@/features/auth/components/AuthFormScreen';
 
 export default function LoginScreen() {
-  return (
-    <PlaceholderScreen title="Log in" phase="Phase 4" description="Username or email + password." />
-  );
+  return <AuthFormScreen mode="login" />;
 }

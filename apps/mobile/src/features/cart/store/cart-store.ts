@@ -20,6 +20,8 @@ export type CartLine = {
 };
 
 type CartState = {
+  ownerId: string | null;
+  bindOwner: (userId: string | null) => void;
   lines: Record<string, CartLine>;
   /** Adds one unit; creates the line if needed. Returns the new quantity. */
   add: (line: Omit<CartLine, 'quantity'>) => number;
@@ -30,6 +32,12 @@ type CartState = {
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
+      ownerId: null,
+      bindOwner: (userId) =>
+        set((state) => ({
+          ownerId: userId,
+          lines: !userId || (state.ownerId && state.ownerId !== userId) ? {} : state.lines,
+        })),
       lines: {},
       add: (line) => {
         const existing = get().lines[line.variantId];
@@ -51,7 +59,7 @@ export const useCartStore = create<CartState>()(
     {
       name: 'vivodha-cart-v1',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ lines: s.lines }),
+      partialize: (s) => ({ lines: s.lines, ownerId: s.ownerId }),
     },
   ),
 );

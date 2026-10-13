@@ -17,19 +17,24 @@ Every mobile and admin screen, with its route, main components, and the four sta
 
 ### Onboarding: `app/(onboarding)/`
 
-| Screen   | Route       | Components                                                                                         | Notes / special states                                                            |
-| -------- | ----------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Splash   | `/splash`   | LogoMark, wordmark, tagline                                                                        | Restores the session, loads `store_config`. Error → "Can't reach Vivodha" + Retry |
-| Welcome  | `/welcome`  | Brand hero, Button×3 (Log in / Sign up / Continue as guest)                                        | Guest → anonymous sign-in. Loading state on the guest button                      |
-| Location | `/location` | Permission explainer, Detect button, AddressForm, PincodeInput, ServiceabilityResult, NotifyMeForm | Permission denied → manual entry. Unserviceable → "Coming soon, notify me"        |
+| Screen   | Route       | Components                                                                                         | Notes / special states                                                                              |
+| -------- | ----------- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Splash   | `/splash`   | LogoMark, wordmark, tagline                                                                        | Restores the session, loads `store_config`. Error → "Can't reach Vivodha" + Retry                   |
+| Welcome  | `/welcome`  | Brand hero, Button×3 (Log in / Sign up / Continue as guest), Turnstile                             | Guest → CAPTCHA-protected anonymous sign-in; challenge errors/expiry and offline disable submission |
+| Location | `/location` | Permission explainer, Detect button, AddressForm, PincodeInput, ServiceabilityResult, NotifyMeForm | Permission denied → manual entry. Unserviceable → "Coming soon, notify me"                          |
 
 ### Auth: `app/(auth)/`
 
-| Screen          | Route              | Components                                                         | Notes                                                               |
-| --------------- | ------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| Login           | `/login`           | Input (username or email), PasswordInput, Button, links            | Generic error copy. Rate-limit message                              |
-| Sign up         | `/signup`          | Inputs: name, username (live availability), email, password, phone | Username taken → inline error. Success → "Verify your email" screen |
-| Forgot password | `/forgot-password` | EmailInput, Button, success notice                                 | The same success copy whether or not the email exists               |
+| Screen          | Route              | Components                                                            | Notes                                                                              |
+| --------------- | ------------------ | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Login           | `/login`           | Input (username or email), PasswordInput, Button, links               | Generic error copy. Rate-limit message                                             |
+| Sign up         | `/signup`          | Inputs: name, username (live availability), email, password, phone    | Username taken → inline error. Success → "Verify your email" screen                |
+| Forgot password | `/forgot-password` | EmailInput, Button, success notice                                    | The same success copy whether or not the email exists                              |
+| Check email     | `/check-email`     | Confirmation notice, CAPTCHA-protected resend, login/guest navigation | Signup and same-ID guest conversion; no password retained across confirmation      |
+| Set password    | `/set-password`    | Password/confirmation, strength meter, save action                    | Recovery session or confirmed pending conversion only; no OTP                      |
+| Email callback  | `/auth-callback`   | Session exchange, error/retry/new-link actions                        | Consumes confirmation/recovery link; removes tokens from navigation after exchange |
+
+**Phase 3 auth checkpoint (2026-10-13):** the auth routes above and startup session gate are implemented, using keyboard-safe forms, shared validation, debounced boolean username checks, friendly errors, offline-disabled mutations, masked passwords and accessible strength feedback. Account shows guest conversion/login prompts or permanent name/username/email/phone plus logout/cart clearing and an explanatory deletion entry. Address CRUD, full deletion, and location/serviceability screens remain pending. `/location` currently states that setup is pending and permits browsing without claiming serviceability. Android Expo Go recordings are required before proceeding to location implementation.
 
 ### Tabs: `app/(tabs)/`
 

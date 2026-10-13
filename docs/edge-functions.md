@@ -12,7 +12,7 @@ Common conventions:
 
 | Function               | Phase | Auth                        | Trigger                    |
 | ---------------------- | ----- | --------------------------- | -------------------------- |
-| username-login         | 4     | none (public, rate-limited) | HTTP                       |
+| username-login         | 3     | none (public, rate-limited) | HTTP                       |
 | serviceability-check   | 4     | none / any                  | HTTP                       |
 | place-order            | 6     | guest or customer JWT       | HTTP                       |
 | create-razorpay-order  | 6     | guest or customer JWT       | HTTP                       |
@@ -28,12 +28,16 @@ Common conventions:
 
 Resolves a username to the user's email server-side and signs in, so emails are never exposed to clients.
 
-- **Input:** `{ identifier: string, password: string }`. If `identifier` contains `@` it is treated as an email.
-- **Process:** look up `usernames → auth.users.email` (SR), then call `signInWithPassword` against GoTrue and return the session.
-- **Output:** `200 { session: { access_token, refresh_token, expires_at, user } }`
-- **Errors:** `400 INVALID_INPUT`, `401 INVALID_CREDENTIALS` (the same response for an unknown user and a wrong password), `403 EMAIL_NOT_VERIFIED`, `429 RATE_LIMITED`.
-- **Notes:** Per-IP and per-identifier rate limit. Email-based login can call Supabase Auth directly from the client; this function exists for usernames.
-- **Alternative (decide in Phase 4):** an RPC that returns only "exists" + signs in. Returning a session from an Edge Function is the safer default.
+- **Status:** implemented with mobile caller and deployed to DEV on 2026-10-13, including the temporary owner-approved DEV exception. Successful real-user/device login remains pending.
+- **Input:** `{ username: string, password: string, captchaToken?: string }`, validated with shared `usernameLoginRequestSchema`. Missing CAPTCHA is rejected before backend calls by default. Only the server-controlled `DEV_DISABLE_CAPTCHA=true` setting on the exact DEV project permits omission (see [restoration instructions](user-flows.md#temporary-dev-captcha-exception-2026-10-13)). Email-based login calls Supabase Auth directly from the app.
+- **Process:** service-role lookup of `usernames.user_id` and Auth email, then `signInWithPassword` using a separate non-persisting anon client with the CAPTCHA token. Unknown usernames still call Auth using a non-deliverable synthetic identifier.
+- **Output:** `200 { session: { access_token, refresh_token, expires_at, token_type: "bearer" } }`. No resolved email or user object is returned. The app will call `setSession` with these tokens.
+- **Errors:** `400 INVALID_INPUT`, `400 CAPTCHA_FAILED`, `401 INVALID_CREDENTIALS` ("Invalid username or password" for both unknown username and wrong password), `429 RATE_LIMITED`, `503 SERVICE_UNAVAILABLE`, `405 METHOD_NOT_ALLOWED`, `413 INVALID_INPUT` for oversized requests.
+- **Rate limits:** 20 attempts per gateway client IP per minute and 10 per normalized username per minute, using the backend-only `consume_request_limit` RPC. Subjects are SHA-256 hashes, not raw IPs/usernames. Limiter/lookup/Auth transport failures fail closed with generic, non-PII logs.
+- **Gateway:** `verify_jwt = false` only for this public login endpoint. JSON POST and CORS OPTIONS supported; responses have `Cache-Control: no-store`. Requires the gateway client-address header.
+- **Deployment without Docker:** `pnpm supabase functions deploy username-login --use-api`.
+- **Tests:** `pnpm dlx tsx --test apps/mobile/tests/auth.test.mjs supabase/functions/username-login/handler.test.ts` (21 passed, including 10 endpoint tests); `pnpm dlx deno check --config supabase/functions/username-login/deno.json supabase/functions/username-login/index.ts` (passed). Protected-mode live DEV probes returned OPTIONS 204, invalid-input 400, invalid-CAPTCHA 400. Opted-in DEV tokenless unknown-username probe returned generic 401 INVALID_CREDENTIALS. No real-user credentials were used.
+- **Shared schemas:** this function imports the small shared auth API module directly; its Deno import map resolves the existing username regex and pinned npm dependencies. Deno tooling is temporary validation tooling, not a mobile dependency.
 
 ## serviceability-check
 

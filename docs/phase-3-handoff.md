@@ -1,94 +1,206 @@
-# Phase 3 handoff
+# Phase 3 teammate handoff
 
-Updated: 2026-10-08. Work paused at the owner's request to continue on another computer.
+Updated: **2026-10-13, 21:00 IST**. Work paused at the owner's request. This document replaces the earlier pause notes; it is the authoritative resume checklist.
 
-## Branch and transfer
+## Start here
 
-- Continue the existing `phase-3-mobile-auth-onboarding` branch; default branch is `main`.
-- Phase 2 work was merged before this branch was created. Phase 3 plan is approved.
-- Phase 3 changes are **uncommitted**. No Phase 3 commit, push, or PR was made by this assistant. A fresh clone will not include these working-tree changes.
-- Transfer the changed/new files below through an owner-approved method before continuing. Do not discard them or assume they are on the remote branch. Do not transfer credentials, CLI temporary state, or `node_modules`.
-- On the next computer, read [CLAUDE.md](../CLAUDE.md), [.github/copilot-instructions.md](../.github/copilot-instructions.md), the Phase 3 specifications, and this handoff. Inspect `git status`, current branch, and recent commits before editing. This is continuation of an approved phase, not a new phase.
-- Do not use Docker. Do not commit/push the unfinished work without owner approval. Never merge into the default branch.
+- **Phase 3 is incomplete.** Auth implementation is ready for Android review; location/address UI and Google endpoints are not implemented. Phase 4 is admin core, not the next immediate task.
+- Continue `phase-3-mobile-auth-onboarding`. HEAD at pause is `700551e` (owner's foundation commit), following the Phase 2 merge through PR #5. The assistant has not committed, pushed, or opened a Phase 3 PR.
+- **The working tree contains essential modified AND untracked files. A fresh clone does not include them.** Before changing computers, the owner must arrange a reviewed branch commit/push or another approved transfer of all source changes. Do not transfer credentials, Supabase CLI login state, `node_modules`, build caches or session tokens. Do not reset/discard the working tree.
+- Local mobile and admin servers started by this session have been stopped. Hosted Supabase and deployed Edge Functions remain running; the DEV CAPTCHA exception also remains active.
+- Read [CLAUDE.md](../CLAUDE.md), [mobile instructions](../apps/mobile/AGENTS.md), [phases](phases.md), [user flows](user-flows.md), [screens](screens.md), [decisions](decisions.md) and [open questions](open-questions.md) before implementation. The current phase plan is approved, with mandatory Android review pauses.
+- **No Docker. No database passwords in files, commands or chat. Never push/merge into main or force-push.**
 
-## Work completed
+## Hosted DEV and current configuration
+
+Project ref: `nzltgmfodazrhrxufpwe` (public identifier). This is DEV; production is a separate future project.
+
+| Setting            | Current evidence / action                                                                                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema             | All 14 local/remote migrations matched at validation. Owner applied migration 14; no further schema push needed for auth.                                                                                         |
+| pgTAP              | Owner enabled extension in `extensions`; 32 rollback-based assertions passed through the hosted SQL API.                                                                                                          |
+| username-login     | Deployed by assistant with `--use-api`, including DEV-only CAPTCHA exception.                                                                                                                                     |
+| CAPTCHA protection | Owner reports OFF in hosted Auth as requested. Bot protection is reduced until restored.                                                                                                                          |
+| Endpoint exception | Assistant set server-only `DEV_DISABLE_CAPTCHA=true` on explicit DEV project.                                                                                                                                     |
+| Mobile exception   | Ignored `apps/mobile/.env.local` sets `EXPO_PUBLIC_DEV_DISABLE_CAPTCHA=true` on this computer. **Not transferred by Git.**                                                                                        |
+| App safeguards     | Exception requires a development bundle AND the exact DEV URL. Default/production bundles and other project URLs still require CAPTCHA. Client cannot override endpoint policy.                                   |
+| Auth settings      | Owner screenshots confirmed signups, anonymous sign-ins, email confirmation and manual linking enabled. Minimum password length 8 still needs dashboard confirmation.                                             |
+| Redirects          | Owner configured `vivodha://**` plus Expo Go/browser callbacks. Recheck exact URLs for the teammate's LAN IP/port, including conversion and recovery variants.                                                    |
+| Site URL           | `http://localhost:3000` was retained for DEV; mobile supplies explicit callback URLs. It is not a Turnstile setting.                                                                                              |
+| Turnstile          | Owner supplied public site key and allowed hostnames. Chrome and phone worked per owner; VS Code integrated browser failed with error 300030 in protected mode. Keep widget/keys for restoration.                 |
+| Google/SMTP        | Owner previously reported Google secret and Resend SMTP configured. Names, API enablement, billing and actual Google connectivity still need verification before location work; never request key values in chat. |
+
+Production bundle safeguards do **not** restore hosted DEV bot protection. CAPTCHA-disabled tests cannot count as CAPTCHA sign-off.
+
+### Recreate the temporary local exception on another computer
+
+Only if continuing owner-approved DEV testing, create ignored `apps/mobile/.env.local`:
+
+```dotenv
+EXPO_PUBLIC_DEV_DISABLE_CAPTCHA=true
+```
+
+Do not replace the owner's mobile `.env` or print its contents. Use `.env.example` for variable names and obtain approved public configuration through the owner. The app displays a visible **DEV only: CAPTCHA is temporarily disabled** warning and sends no fabricated verification token.
+
+### Restore CAPTCHA before production or CAPTCHA review
+
+1. Remove the local opt-in or set it to `false`; restart Expo and fully reload the app.
+2. Set the endpoint policy back to its protected mode:
+
+   ```powershell
+   pnpm supabase secrets set DEV_DISABLE_CAPTCHA=false --project-ref nzltgmfodazrhrxufpwe
+   ```
+
+3. Re-enable CAPTCHA protection in Supabase DEV Auth with the existing Turnstile configuration.
+4. Confirm allowed `localhost` and native HTTPS-origin hostnames; repeat actual challenge/guest/signup/login/reset/resend tests in Chrome and Android.
+
+See [auth configuration and restoration](user-flows.md#temporary-dev-captcha-exception-2026-10-13).
+
+## Completed implementation
 
 ### Database foundations
 
-Created [migration 14](../supabase/migrations/20261008143000_14_auth_onboarding.sql):
+[Migration 14](../supabase/migrations/20261008143000_14_auth_onboarding.sql) provides:
 
-- Backend-only request limiter and private 24-hour username reservations.
-- Auth trigger to validate signup metadata and finalize username/profile on confirmed permanent signup.
-- Removed direct client username writes; added boolean-only throttled username availability RPC.
-- Minimal public `check_pincode` RPC; removed public coverage-table read policy; added minimum order field.
-- Insert-only public/customer pincode waitlist with admin-only reads. Historical serviceability requests retained, with new client inserts revoked.
-- Atomic own-address default selection RPC.
+- Backend-only durable request limiter; private 24-hour username reservations.
+- Confirmation trigger that validates signup metadata and finalizes username/profile atomically.
+- Boolean-only, throttled username availability RPC; no direct client username writes.
+- Public `check_pincode` RPC with private coverage-table access and minimum-order data.
+- Insert-only pincode waitlist for public/customer callers; admin-only reads. Historical serviceability requests preserved, with new client inserts closed.
+- Ownership-checked atomic default-address selection RPC.
 
-Created [Phase 3 pgTAP tests](../supabase/tests/database/05_auth_onboarding.sql), covering privileges/RLS, signup confirmation, same-user guest conversion/address preservation, username claims, serviceability, waitlist access, limiter validation, and address ownership/defaults. **These tests have not been run successfully yet.**
+Applied migrations must not be edited to correct schema bugs. Add a corrective migration and retain owner-run push approval. Generated [database types](../packages/shared/src/types/database.ts) were refreshed.
 
-### Documentation
+### Mobile auth and local ownership
 
-Modified:
+- Session restoration/validation, auth state provider, route gates and deep-link handling.
+- Welcome and persistent anonymous guest session.
+- Signup with shared Zod validation, live username availability and password strength/show-hide.
+- Email or username login with friendly generic errors.
+- Confirmation/check-email/resend, password recovery and password setup.
+- Guest conversion: update email/metadata on the existing identity, confirm email, then re-enter a password. No password is retained across email confirmation; pending metadata is routing-only, not authorization.
+- Account guest/permanent views, local logout and explanatory deletion entry. **Actual account deletion is not implemented** and must ship before Play release.
+- Local cart binds to user ID: same-ID conversion retains cart; logout/different-user login clears cart and user-scoped cache. Server cart is deferred to Phase 6.
+- Default CAPTCHA enforcement plus the explicit temporary DEV exception across guest, signup, email/username login, recovery and resend.
+- `/location` is deliberately a **pending setup** screen with a browse option. It does not claim coverage or save addresses.
 
-- [phases.md](phases.md): Phase 3 is mobile auth/onboarding; admin core moves to Phase 4, later phase numbers retained.
-- [decisions.md](decisions.md): ADR-143 through ADR-148 record ordering, configuration, identity/serviceability decisions, mandatory Android reviews, and no-Docker hosted validation.
-- [data-model.md](data-model.md), [rls-policies.md](rls-policies.md): migration additions and policy/testing guidance.
-- [open-questions.md](open-questions.md): real pincodes, owner-entered site key, deletion deferral and hosted validation.
-- This handoff is a new file.
+### username-login endpoint
 
-No Phase 3 mobile screens, Edge Functions, dependency additions, or generated database-type updates have been implemented yet.
+- Shared request/session response schemas; private service-role identity lookup and separate anon Auth sign-in client.
+- Returns session fields only, not a resolved email/user object. Unknown username/wrong password use the same generic rejection.
+- Durable SHA-256-subject limits: 20/IP/minute, 10/username/minute. Missing gateway address/limiter/backend failures fail closed.
+- CORS and no-store responses. Only this public login endpoint has gateway `verify_jwt=false`.
+- CAPTCHA omission permitted only by server opt-in on the exact DEV URL; default missing-token requests rejected before backend calls.
 
-## Hosted DEV status (owner-reported)
+### Dependencies
 
-DEV project ref: `nzltgmfodazrhrxufpwe` (public identifier, not a credential).
+Added approved `react-native-webview` 13.16.1 through Expo installer. SDK patch alignment: Expo 57.0.28, Router 57.0.26, Splash 57.0.10, Expo UI 57.0.23. Preserve package manifests, lockfile and workspace release-age exceptions together.
 
-1. `pnpm supabase link --project-ref nzltgmfodazrhrxufpwe` succeeded on the current computer.
-2. `pnpm supabase db push --dry-run` listed only migration 14.
-3. Owner ran `pnpm supabase db push`: migration 14 applied successfully.
-4. Owner ran the following in the Supabase SQL Editor successfully:
+Repo targets Node 22; actual validation runtime was Node 24.19.0. Node-version decision remains open. No need to add a test runner dependency: temporary `pnpm dlx tsx` handles shared bundler imports.
 
-   ```sql
-   create extension if not exists pgtap with schema extensions;
-   ```
+## Files to preserve and inspect
 
-5. **The complete pgTAP test script is still pending.** Extension installation returning no rows is expected; it is not test-pass evidence.
+Run `git status --short` for the complete transfer list: `git diff --stat` alone excludes untracked implementation files.
 
-The migration is already applied to DEV. Do not edit the applied migration to fix a schema bug; use a new corrective migration and the owner-run push gate. Local edits to tests/docs do not alter hosted schema.
+| Area                   | Primary files                                                                                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mobile routes          | [app](../apps/mobile/app): root/layout, auth, onboarding, tabs; new check-email, set-password and auth-callback routes                                    |
+| Auth API/provider/UI   | [auth feature](../apps/mobile/src/features/auth): APIs, callback/session routing, provider, forms, CAPTCHA native/web, Account and hooks                  |
+| Session/CAPTCHA policy | [supabase client](../apps/mobile/src/lib/supabase.ts), [DEV policy](../apps/mobile/src/lib/captcha-policy.ts), existing secure-storage adapter            |
+| Cart ownership         | [cart store](../apps/mobile/src/features/cart/store/cart-store.ts)                                                                                        |
+| Shared validation      | [auth API schemas](../packages/shared/src/schemas/auth-api.ts), [schema exports](../packages/shared/src/schemas/index.ts)                                 |
+| Endpoint               | Entire [username-login directory](../supabase/functions/username-login), including index, handler, tests, Deno config and lock                            |
+| Tests/types/config     | [mobile tests](../apps/mobile/tests/auth.test.mjs), [pgTAP suite](../supabase/tests/database/05_auth_onboarding.sql), generated DB types, Supabase config |
+| Package/config changes | Mobile package, root lockfile, workspace config, public env example. Preserve owner-edited env; recreate ignored local DEV opt-in separately.             |
+| Docs                   | PRD, data model, decisions ADR-143 through ADR-151, Edge Functions, phases, RLS, screens, user flows, open questions and this handoff                     |
 
-## Exact next steps
+## Validation evidence at pause
 
-1. Ask the owner to run the **entire** [test script](../supabase/tests/database/05_auth_onboarding.sql) in the DEV Supabase SQL Editor, including its opening transaction and final rollback. SQL is not a PowerShell command. Inspect every assertion for `not ok`; a generic query-success message is insufficient. If an error prevents the final rollback, run `rollback;` separately. Ask for sanitized results only.
-2. Resolve any failures without Docker. Distinguish a test-harness issue from a schema defect. Do not claim database validation passed until actual results are available.
-3. After tests pass, regenerate database types using `pnpm db:types`. On the new computer, owner may need to authenticate/link the Supabase CLI again; enter credentials privately, never in files or chat.
-4. Continue the approved implementation below. Read [apps/mobile/AGENTS.md](../apps/mobile/AGENTS.md) and version-matched documentation before mobile changes.
+These are previous results, not a substitute for rerunning checks after transfer or further changes.
 
-## Remaining approved implementation
+| Exact command / check                                                                                                 | Result and scope                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm dlx tsx --test apps\mobile\tests\auth.test.mjs supabase\functions\username-login\handler.test.ts`               | **21/21 passed** after DEV exception; includes protected-default rejection, development/project safeguards, token omission, retained limits and generic errors. |
+| `pnpm supabase db query --linked --file supabase\tests\database\05_auth_onboarding.sql`                               | **32/32 passed**; fixtures rolled back. `finish(true)` ensures failure assertions raise errors.                                                                 |
+| `pnpm exec turbo run lint typecheck --filter=mobile --filter=@vivodha/shared`                                         | **4/4 tasks passed** after exception.                                                                                                                           |
+| `pnpm dlx deno check --config supabase\functions\username-login\deno.json supabase\functions\username-login\index.ts` | Passed.                                                                                                                                                         |
+| `pnpm dlx deno lint supabase\functions\username-login\handler.ts supabase\functions\username-login\index.ts`          | Passed for production source.                                                                                                                                   |
+| `pnpm dlx deno lint supabase\functions\username-login`                                                                | Failed on pre-existing test mock `require-await`; not a production-source failure, not silently treated as a pass.                                              |
+| `pnpm format:check` / `git diff --check`                                                                              | Passed after exception; Git warns existing SQL CRLF will normalize to LF.                                                                                       |
+| `pnpm lint`, `pnpm typecheck`, Expo Doctor                                                                            | Full repo checks passed before DEV exception; Doctor **21/21**. Latest exception received targeted mobile/shared checks above.                                  |
+| Android full native bundle                                                                                            | HTTP 200, about 13.2 MB before latest exception/UI refinements. Not device sign-off or a final production build.                                                |
+| Admin/mobile startup                                                                                                  | Both served successfully; admin login returned HTTP 200. Now intentionally stopped for handoff.                                                                 |
+| Protected endpoint live probes                                                                                        | OPTIONS 204, malformed input 400, invalid CAPTCHA 400 before exception.                                                                                         |
+| Exception endpoint live probe                                                                                         | Tokenless unknown username returned **401 INVALID_CREDENTIALS**. No real-user credentials used.                                                                 |
+| Exception browser guest flow                                                                                          | DEV warning, widget absent, button enabled; Auth signup **200 without token**, pending location, Home and Account guest view; same identity after reload.       |
+| Browser failure recovery                                                                                              | Transient Supabase DNS failure showed reconnect/retry; retry recovered and subsequent reload passed.                                                            |
+| Owner protected-mode report                                                                                           | CAPTCHA worked in Chrome and on phone, not VS Code integrated browser. Not a complete Android auth review.                                                      |
 
-- Session restoration/start routing, Welcome, Turnstile WebView, persistent CAPTCHA-protected guest sign-in.
-- Shared signup schemas, debounced availability, password strength, signup/email confirmation/deep links, username/email login, password reset, friendly errors and logout.
-- Guest-to-account conversion must preserve the same auth user ID/cart/addresses. Verify Supabase confirmation/password ordering rather than assuming a combined update works.
-- Four typed, validated, rate-limited Edge Functions: `username-login`, `geocode-reverse`, `places-autocomplete`, `places-details`. Google calls stay server-side; username login must not expose the resolved email and must use generic invalid-credential errors.
-- **Pause after auth for real Android Expo Go screenshots/recordings. Web preview is not sign-off for this phase.**
-- Location permission/GPS, manual Places or pincode fallback, address form/CRUD/defaults, serviceability, waitlist, delivery-header address switcher and gentle unserviceable-cart notice.
-- Minimal Account guest/permanent views and explanatory deletion entry (full deletion deferred).
-- **Pause again after location for real Android Expo Go screenshots/recordings.**
-- Update related user-flow/screen/Edge Function/RLS/phase/decision/open-question docs; run lint, typecheck, format and Expo Doctor; verify both apps start; review secrets/RLS; Conventional Commits with Copilot co-author, branch push and templated PR. Never merge.
+**Unverified:** real permanent-account signup/confirmation, email/username login, guest conversion/cart preservation, reset, and logout end-to-end on Android. No Android screenshots/recordings/sign-off have been supplied.
 
-## Configuration and constraints
+## Teammate startup (Windows, no Docker)
 
-- Owner reports Resend SMTP, Turnstile attack protection, and Google Maps Edge Function secret configured.
-- Ask owner to enter the public Turnstile site key locally as `EXPO_PUBLIC_TURNSTILE_SITE_KEY`; add its name to the env example. Never ask for a key/password in chat. Exact Supabase redirect URLs, including the actual Expo Go development URL on the new computer, still need documenting/configuring.
-- Ask for real delivery pincodes/ETAs; keep marked development placeholders if unavailable.
-- Only pre-approved new libraries: `react-native-webview`, `expo-location`, `expo-linking`, `expo-secure-store` (the latter two already exist). Install mobile packages with `npx expo install`; ask before any other library.
-- Preserve existing UI kit/tokens/motion, accessibility, reduced motion, loading/empty/error/offline states, and keyboard-safe forms. UX patterns only; no competitor assets.
-- Existing `ensureGuestSession()` signs in without CAPTCHA and must be replaced/adapted. Existing startup/auth/location/account routes are not Phase 3-complete.
-- Preserve existing auth profile/admin-invite triggers and secure session storage. No passwords stored. Clear user-scoped state on logout/account switch; retain cart for same-ID conversion.
-- Start mobile via `pnpm dev:mobile` from the repository root, not plain root-level Expo startup (which previously resolved the wrong App entry).
+After obtaining the complete working-tree changes and approved configuration:
 
-## Validation at pause
+```powershell
+git status --short
+git branch --show-current
+git --no-pager log -3 --oneline
+pnpm install --frozen-lockfile
+pnpm supabase login
+pnpm supabase link --project-ref nzltgmfodazrhrxufpwe
+pnpm supabase migration list --linked
+```
 
-- Changed documentation formatting and `git diff --check` passed before this handoff; the handoff is checked separately when saved.
-- Local database tests previously could not run; Docker use was explicitly prohibited afterward.
-- Hosted migration application and pgTAP extension creation are owner-confirmed, not a pgTAP pass.
-- Full Phase 3 lint/typecheck/Expo Doctor/app/device checks remain pending.
-- Dev-server processes are not transferred between computers; their current readiness is not verified.
+Use Node 22 as specified by `.nvmrc` and pnpm 12.9.1. Authenticate privately. If linking needs a DB password, the owner enters it in their terminal; never record it.
+
+In separate terminals:
+
+```powershell
+pnpm dev:mobile --port 8081
+```
+
+```powershell
+pnpm dev:admin
+```
+
+Start mobile from the repo via its workspace script, **not root-level plain Expo** (previously caused the wrong App entry). Use the newly printed QR/LAN address. This computer used `172.20.10.5`; do not assume that IP on another system. Phone and computer must share a reachable network. Add exact new Expo Go confirmation/conversion/recovery redirects as described in [user flows](user-flows.md#auth-configuration-for-the-android-review).
+
+Do not run `pnpm supabase start` or `pnpm supabase test db --linked`: both attempted Docker here. Use the hosted rollback SQL API command above. Future deployments use `--use-api` and explicit project ref. Do not push migrations or seed data just to resume.
+
+### Known preview limitation
+
+Expo's Node process hit approximately 4 GB heap exhaustion after about 52 minutes. Restarting restored HTTP 200; no heap-limit/config/dependency workaround was added. Investigate separately if it recurs; this is **not resolved**. Do not kill unrelated processes by name. Stop only identified repo process IDs or session shells. SDK package install previously hit file locks; stopping identified dev servers allowed retry.
+
+## Next tasks, in order
+
+1. **Mandatory Android auth checkpoint first.** Collect phone model/Android version and screenshots/recordings for the checklist below. Mark untested items explicitly. Fix actual failures before location implementation. Current tests are CAPTCHA-disabled; restore and retest CAPTCHA separately before release/sign-off.
+2. Verify Google APIs/billing/server-only configuration with owner, without retrieving or displaying secrets. Obtain real pincodes/ETAs, or retain explicitly marked development placeholders.
+3. Implement typed/rate-limited authenticated `geocode-reverse`, `places-autocomplete`, `places-details`; restrict to India and use Places session tokens. Secrets stay only in Edge Functions.
+4. Implement permission/GPS/manual fallback, Places/pincode input, address CRUD/defaults, coverage/waitlist, delivery-header address switcher and gentle unserviceable-cart notice. Preserve tokens, accessibility, reduced motion and loading/empty/error/offline states.
+5. **Mandatory second Android checkpoint** for location/address/coverage behavior.
+6. Finish docs and all checks, app startup, RLS/secrets review. With owner approval, Conventional Commits with Copilot co-author, push the phase branch and create a PR using the repository template with screenshots. Owner reviews/merges; never merge main yourself. Phase 4 waits for Phase 3 completion/merge.
+
+Approved new mobile libraries: WebView (already installed), expo-location (not yet installed), expo-linking/expo-secure-store (already present). Use `npx expo install` from mobile; ask before additional libraries.
+
+### Android review feedback to collect
+
+```text
+Phone model:
+Android version:
+CAPTCHA mode: temporary DEV OFF / restored ON
+Guest sign-in + fully closing/reopening: PASS / FAIL / NOT TESTED
+Guest cart persistence: PASS / FAIL / NOT TESTED
+Guest conversion + email link + cart preserved: PASS / FAIL / NOT TESTED
+Fresh signup + confirmation: PASS / FAIL / NOT TESTED
+Email login / username login: PASS / FAIL / NOT TESTED
+Wrong-password error / logout + cart clearing: PASS / FAIL / NOT TESTED
+Recovery link + new password works + old password rejected: PASS / FAIL / NOT TESTED
+Confirmation resend: PASS / FAIL / NOT TESTED
+Keyboard, scrolling, back navigation: PASS / FAIL / NOT TESTED
+Offline error + retry after reconnecting: PASS / FAIL / NOT TESTED
+Exact failing step and visible error:
+Screenshots/recordings (hide personal info, passwords, link tokens):
+```
+
+Use an inbox controlled by the tester; open email links on the same phone. Test guest conversion before logging out, with an item in the guest cart. Use a different email/username for fresh signup. Do not assume a successful CAPTCHA or database test means all auth flows passed.

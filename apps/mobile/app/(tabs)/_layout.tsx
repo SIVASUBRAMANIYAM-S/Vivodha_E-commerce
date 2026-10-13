@@ -1,4 +1,4 @@
-import { usePathname } from 'expo-router';
+import { Redirect, usePathname } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,10 +6,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CartBar } from '@/components/commerce/CartBar';
 import { TAB_BAR_HEIGHT, TabBar } from '@/components/navigation/TabBar';
 import { spacing } from '@/theme';
+import { useAuth } from '@/features/auth/components/AuthProvider';
+import { SessionStartScreen } from '@/features/auth/components/SessionStartScreen';
+import { needsPassword } from '@/features/auth/api/session-route';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const { session, loading, error, recovery } = useAuth();
+
+  if (loading || error) return <SessionStartScreen />;
+  if (!session) return <Redirect href="/welcome" />;
+  if (needsPassword(session.user, recovery)) {
+    return <Redirect href="/set-password" />;
+  }
 
   return (
     <View style={styles.root}>

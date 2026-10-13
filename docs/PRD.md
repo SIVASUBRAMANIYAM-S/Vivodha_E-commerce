@@ -77,7 +77,7 @@ Variant types are **generic attribute sets**: grocery uses weight / pack size, f
 
 Each feature lists the phase that delivers it ([phases.md](phases.md)).
 
-### F1. Onboarding & location (Phase 4)
+### F1. Onboarding & location (Phase 3)
 
 - **US1.1** As a new user, I see a branded splash and can choose Log in, Sign up, or Continue as guest.
   - AC: The splash shows for at most 2 s after assets load. All three options are visible without scrolling on a 360×640 screen.
@@ -86,7 +86,7 @@ Each feature lists the phase that delivers it ([phases.md](phases.md)).
 - **US1.3** As a user in an unserviceable pincode, I see "Coming soon" and can ask to be notified.
   - AC: Entering an unserviceable pincode shows a "Coming soon, notify me" form (email or phone). The request is stored once per contact + pincode. I can still change the pincode.
 
-### F2. Authentication (Phase 4)
+### F2. Authentication (Phase 3)
 
 - **US2.1** As a new customer, I sign up with name, username, email, password, and phone.
   - AC: Usernames are unique, lowercase, `[a-z0-9_]{3,20}`, and checked live. Email must be verified before checkout as a registered user (guest checkout stays available). Phone is a 10-digit Indian mobile number.
@@ -96,7 +96,7 @@ Each feature lists the phase that delivers it ([phases.md](phases.md)).
   - AC: The reset link expires per Supabase settings, and the response does not reveal whether the email exists.
 - No OTP. Google sign-in comes later.
 
-### F3. Guest checkout & conversion (Phases 4, 6)
+### F3. Guest checkout & conversion (Phases 3, 6)
 
 - **US3.1** As a guest, I can browse and place an order without creating an account.
   - AC: An anonymous Supabase session is created silently. Checkout collects name, phone, email, and address.

@@ -32,7 +32,7 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 | Table                   | anon                           | guest                                    | customer                            | admin                                               | service_role                                |
 | ----------------------- | ------------------------------ | ---------------------------------------- | ----------------------------------- | --------------------------------------------------- | ------------------------------------------- |
 | profiles                | ✗                              | R/U own¹                                 | R/U own¹                            | R all (support+); U (manager+)                      | all (bypasses RLS)                          |
-| usernames               | ✗                              | R own; C own                             | R own; C own                        | R all                                               | all                                         |
+| usernames               | ✗                              | R own                                    | R own                               | R all                                               | all                                         |
 | admin_invites           | ✗                              | ✗                                        | ✗                                   | all (super_admin only)                              | all                                         |
 | admin_users             | ✗                              | ✗                                        | ✗                                   | R all; C/U/D (super_admin only)                     | all                                         |
 | sellers                 | R active                       | R active                                 | R active                            | R all; C/U (manager+)                               | all                                         |
@@ -45,8 +45,8 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 | variants                | ✗ (via `variants_public`²)     | ✗ (via `variants_public`²)               | ✗ (via `variants_public`²)          | R all; C/U/D (catalog+)                             | all                                         |
 | inventory               | ✗ (via `inventory_available`²) | ✗ (via `inventory_available`²)           | ✗ (via `inventory_available`²)      | R (catalog/orders+); U (catalog+)                   | all                                         |
 | addresses               | ✗                              | all own                                  | all own                             | R all (orders/support+)                             | all                                         |
-| serviceable_pincodes    | R active                       | R active                                 | R active                            | all (orders+)                                       | all                                         |
-| serviceability_requests | ✗                              | C                                        | C                                   | R (any admin)                                       | all                                         |
+| serviceable_pincodes    | RPC only                       | RPC only                                 | RPC only                            | all (orders+)                                       | all                                         |
+| serviceability_requests | ✗                              | ✗                                        | ✗                                   | R (any admin)                                       | all                                         |
 | banners                 | R active & scheduled           | R active & scheduled                     | R active & scheduled                | all (catalog+)                                      | all                                         |
 | home_sections           | R active                       | R active                                 | R active                            | all (catalog+)                                      | all                                         |
 | store_config            | R                              | R                                        | R                                   | R all; U (manager+)                                 | all                                         |
@@ -95,7 +95,7 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 - **`points_ledger` immutability** is enforced by triggers, not just RLS (see footnote 5 above) — the only way to correct a mistake is an offsetting row, never an edit.
 - **Inventory is mutated only through `reserve_inventory`/`release_inventory`/`commit_inventory`** (migration 03, `security definer`, `service_role`-only). No role — including a plain `UPDATE` by an authenticated customer or even an admin — can touch `inventory.quantity`/`reserved` directly except through those functions or the `inventory_update_admin` policy (manual stock corrections).
 - **Order/invoice numbers are generated server-side** by `next_order_number()`/`next_invoice_number()` (migration 07, counter tables + `security definer`), never constructed by the client.
-- **Username → email resolution** happens only inside the `username-login` Edge Function (Phase 4, `service_role`). There is no RLS policy, function, or view that lets any client-reachable role read `auth.users.email` by username.
+- **Username → email resolution** happens only inside the `username-login` Edge Function (Phase 3, `service_role`). There is no RLS policy, function, or view that lets any client-reachable role read `auth.users.email` by username.
 - **Guest order lookup** (order number + email/phone) is planned as a rate-limited `security definer` function (Phase 4/6) returning a minimal summary — not yet built in Phase 1, since `orders` doesn't need it until checkout exists.
 - **Storage policies mirror the equivalent table's RLS** (migration 13): `product-images`/`banners` are public-read, catalog+-write; `shopping-list-uploads/{user_id}/…` is owner-only (via `storage.foldername(name)[1] = auth.uid()::text`) plus support/manager/super_admin read.
 - **Anonymous sign-in abuse:** enable CAPTCHA (hCaptcha/Turnstile) before launch, and keep Supabase's per-IP anonymous rate limit — provider choice is still open (`docs/open-questions.md`).
@@ -104,7 +104,7 @@ Legend: **R** select · **C** insert · **U** update · **D** delete · **own** 
 
 ## Testing
 
-### Phase 3 migration (pending owner application)
+### Phase 3 migration (applied and tested on hosted DEV)
 
 Migration `20261008143000_14_auth_onboarding.sql` adds:
 
@@ -115,7 +115,9 @@ Migration `20261008143000_14_auth_onboarding.sql` adds:
 - `pincode_waitlist`: only pincode/email/phone INSERT columns for anon/authenticated, server-assigned user ID, admin-only SELECT, no client UPDATE/DELETE. Historical request rows remain in the old table, whose client INSERT privilege is revoked.
 - Authenticated `set_default_address`, including guests: caller-owned address only, serialized per profile, one default and matching profile pincode.
 
-New assertions live in `supabase/tests/database/05_auth_onboarding.sql`. These tests have not yet run. The owner approved hosted DEV validation without Docker: after applying the reviewed migration, enable the `pgtap` extension in the `extensions` schema and run the complete test file in the SQL Editor. It begins a transaction and ends with `rollback`; test users, addresses and rate-limit rows are not retained. If execution errors before the final rollback, run `rollback;` before retrying. Do not treat the migration as database-tested until all assertions pass.
+New assertions live in `supabase/tests/database/05_auth_onboarding.sql`. All 32 passed on hosted DEV on 2026-10-13 using `pnpm supabase db query --linked --file supabase/tests/database/05_auth_onboarding.sql`. The script uses `finish(true)` to raise an error on failed assertions, begins a transaction and ends with `rollback`; test users, addresses and rate-limit rows are not retained. The owner previously applied the migration and enabled pgTAP. The SQL Editor can also run the complete file; if execution errors before the final rollback, run `rollback;` before retrying.
+
+Do not use `pnpm supabase test db --linked` in this environment: despite its linked flag, this CLI version tries to run a Docker-based test runner. Use the SQL API command above instead. No Docker daemon was started.
 
 `supabase/tests/database/*.sql` has a pgTAP suite covering RLS-enabled-on-every-table, the `admin_invites` → `admin_users` signup trigger, anon/guest/customer/admin access patterns for the tables above, ledger immutability, the status-transition guard, and the order/invoice number generators.
 

@@ -27,8 +27,12 @@ Decisions needed from the owner, grouped by the phase that needs them. When one 
 
 - Full account deletion is deferred beyond this phase. The explanatory Account entry is not deletion; the complete in-app and web deletion flow must ship before Google Play release.
 - Owner supplies real delivery pincodes and ETAs; retain clearly marked development placeholders if none are available.
-- Owner must enter the public Turnstile site key locally. Never paste secret keys, Google credentials, or passwords into chat.
-- Owner approved hosted DEV validation without Docker. Apply the reviewed migration only to DEV, then run rollback-based pgTAP assertions in the SQL Editor before treating it as verified.
+- Never paste secret keys, Google credentials, or passwords into chat. The public Turnstile site key was entered by the owner; it does not need to be collected again.
+- Hosted DEV foundation validation is complete: migration applied by owner, all 32 rollback-based pgTAP assertions passed via the Docker-free SQL API on 2026-10-13.
+- Owner reports protected-mode verification worked on phone and Chrome after hostname configuration, but failed in VS Code integrated browser. Temporary DEV-only disablement is approved and active (ADR-151); restore hosted Auth, endpoint and local app policies before CAPTCHA review or production. See [handoff](phase-3-handoff.md).
+- Hosted manual linking was confirmed enabled by the owner. Confirm minimum password length is 8 and update exact redirects in [user-flows.md](user-flows.md#auth-configuration-for-the-android-review) for any new computer/LAN IP, including recovery and conversion. Local config changes do not modify hosted Auth settings.
+- **Required pause:** supply Android Expo Go screenshots/recordings of signup/confirmation, username and email login, wrong password, guest persistence, same-ID conversion and password recovery. Auth UI is implemented but these real-device flows are not yet signed off; location UI remains pending.
+- **Preview reliability:** Expo reached approximately 4 GB Node heap exhaustion after about 52 minutes. Restart restored service; long-running memory growth is unresolved. Both session-owned preview servers were stopped at the 2026-10-13 teammate handoff.
 
 13. **Guest → account when the email already exists:** auto-merge the guest orders after login, or link them manually through support?
 14. Minimum password policy (length, complexity, breached-password check).

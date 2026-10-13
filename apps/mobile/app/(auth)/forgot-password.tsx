@@ -1,11 +1,5 @@
-import { PlaceholderScreen } from '@/components/ui';
+import { AuthFormScreen } from '@/features/auth/components/AuthFormScreen';
 
 export default function ForgotPasswordScreen() {
-  return (
-    <PlaceholderScreen
-      title="Reset password"
-      phase="Phase 4"
-      description="Reset link sent by email."
-    />
-  );
+  return <AuthFormScreen mode="forgot" />;
 }

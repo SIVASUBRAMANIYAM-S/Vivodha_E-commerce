@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 import { PHONE_REGEX_IN, PINCODE_REGEX, USERNAME_REGEX } from '../constants';
 
+export {
+  isDevCaptchaDisabled,
+  authCaptchaOptions,
+  usernameLoginRequestSchema,
+  usernameLoginResponseSchema,
+  type UsernameLoginRequest,
+  type UsernameLoginResponse,
+} from './auth-api';
+
 /** Phase 0 stubs. Feature phases extend these alongside the generated DB types. */
 
 export const pincodeSchema = z
@@ -25,7 +34,7 @@ export const emailSchema = z.email('Enter a valid email');
 export const passwordSchema = z.string().min(8, 'At least 8 characters');
 
 export const signUpSchema = z.object({
-  fullName: z.string().trim().min(2, 'Enter your name'),
+  fullName: z.string().trim().min(2, 'Enter your name').max(100, 'Use at most 100 characters'),
   username: usernameSchema,
   email: emailSchema,
   password: passwordSchema,
@@ -35,7 +44,17 @@ export type SignUpInput = z.infer<typeof signUpSchema>;
 
 /** Login accepts a username OR an email in a single field. */
 export const loginSchema = z.object({
-  identifier: z.string().trim().min(3, 'Enter your username or email'),
+  identifier: z
+    .string()
+    .trim()
+    .min(3, 'Enter your username or email')
+    .refine(
+      (value) =>
+        value.includes('@')
+          ? emailSchema.safeParse(value).success
+          : usernameSchema.safeParse(value).success,
+      'Enter a valid username or email',
+    ),
   password: z.string().min(1, 'Enter your password'),
 });
 export type LoginInput = z.infer<typeof loginSchema>;

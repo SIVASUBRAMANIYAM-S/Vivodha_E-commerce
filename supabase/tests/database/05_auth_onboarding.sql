@@ -135,5 +135,5 @@ select throws_ok(
   '42501', 'Address not found', 'missing or other-user address is rejected');
 select is((select count(*)::int from public.pincode_waitlist), 0,
   'customer cannot read waitlist');
-select * from finish();
+select * from finish(true);
 rollback;
